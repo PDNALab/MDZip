@@ -13,7 +13,7 @@ def read_traj(xtc_:str, top_:str, ref_:str=None):
         com = np.mean(frame_positions, axis=0)
         traj.xyz[i, :, :] -= com
     
-    return traj.xyz
+    return traj.xyz, traj.n_atoms
 
 def minMaxScale(array:np.ndarray):
     return (array - array.min()) / (array.max() - array.min())
