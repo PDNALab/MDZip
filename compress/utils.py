@@ -3,7 +3,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 import time
-from compress import *
+from autoencoder import *
 
 # import sys
 from torch.utils.data import DataLoader
