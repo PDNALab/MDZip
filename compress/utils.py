@@ -3,11 +3,12 @@ import numpy as np
 import os
 from tqdm import tqdm
 import time
+from compress import *
 
 # import sys
 from torch.utils.data import DataLoader
 
-def read_traj_to_dl(traj_:str, top_:str, memmap:bool=False, stride:int=1, chunk:int=1000, batch_size:int=128):
+def read_traj_to_dl(traj_:str, top_:str, memmap:bool=False, stride:int=None, chunk:int=1000, batch_size:int=128):
     r"""
 Create a Dataloader to train compressor model.
 ----------------------------------------------
@@ -55,7 +56,8 @@ batch_size (int) : samples per batch to load [Default=128]
         
 
     traj_dl = DataLoader(centered_xyz.reshape(-1,1,n_atoms,3), batch_size=batch_size, shuffle=True, drop_last=True)
-    print('\nDataLoader created')
+    if stride != None:
+        print(f'\nDataLoader created')
     print('_'*70,'\n')
     
     del centered_xyz
@@ -64,3 +66,24 @@ batch_size (int) : samples per batch to load [Default=128]
         os.remove('temp_traj.dat')
 
     return traj_dl, n_atoms
+
+def rmsd_validation(model:LightAE, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_atoms:bool = True):
+    top = md.load_topology(top)
+    model.eval()
+    rmsd = []
+
+    with torch.no_grad():
+        for batch in tqdm(dl, bar_format='calculating RMSD : {percentage:6.2f}% |{bar}|', ncols=50):
+            pred_ = model(batch)
+            for y, y_ in zip(batch, pred_):
+                traj1 = md.Trajectory(y.detach().cpu().numpy().reshape(-1,3), top)
+                traj2 = md.Trajectory(y_.detach().cpu().numpy().reshape(-1,3), top)
+                if heavy_atoms:
+                    ha = traj1.topology.select('not element H')
+                    traj2.superpose(traj1, frame=0, atom_indices=ha)
+                    rmsd_value = md.rmsd(traj2, traj1, atom_indices=ha)
+                else:
+                    traj2.superpose(traj1, frame=0)
+                    rmsd_value = md.rmsd(traj2, traj1)
+                rmsd.append(float(rmsd_value[0]))
+    return np.array(rmsd) 

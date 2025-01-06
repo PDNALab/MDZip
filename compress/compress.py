@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import pytorch_lightning as pl
+from utils import *
 
 
 class RMSELoss(nn.Module):
@@ -12,7 +13,6 @@ class RMSELoss(nn.Module):
     def forward(self, recon, x):
         rmse = torch.sqrt(torch.mean((recon - x) ** 2))
         return rmse
-
 
 class AE(nn.Module):
     def __init__(self, n_atoms:int, latent_dim:int=20, n_channels:int=4096):
