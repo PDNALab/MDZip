@@ -9,7 +9,7 @@ from autoencoder import *
 # import sys
 from torch.utils.data import DataLoader
 
-def read_traj_to_dl(traj_:str, top_:str, memmap:bool=False, stride:int=None, chunk:int=1000, batch_size:int=128):
+def read_traj(traj_:str, top_:str, memmap:bool=False, stride:int=1, chunk:int=1000):
     r"""
 Create a Dataloader to train compressor model.
 ----------------------------------------------
@@ -54,19 +54,8 @@ batch_size (int) : samples per batch to load [Default=128]
         start_frame += chunk.n_frames
     if memmap:
         centered_xyz.flush()
-        
 
-    traj_dl = DataLoader(centered_xyz.reshape(-1,1,n_atoms,3), batch_size=batch_size, shuffle=True, drop_last=True)
-    if stride != None:
-        print(f'\nDataLoader created')
-    print('_'*70,'\n')
-    
-    del centered_xyz
-
-    if memmap:
-        os.remove('temp_traj.dat')
-
-    return traj_dl, n_atoms
+    return centered_xyz.reshape(-1,1,n_atoms,3)
 
 def rmsd_(model:LightAE, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_atoms:bool = True):
     top = md.load_topology(top)
