@@ -8,6 +8,7 @@ import pickle
 import numpy
 import argparse
 import os
+import shutil
 
 from utils import *
 from autoencoder import *
@@ -51,7 +52,7 @@ if memmap not in [1,0]:
 else:
     memmap = True if memmap==1 else False
     
-# Define device --------
+# Define device ---------
 if torch.cuda.is_available():
     device = torch.device('cuda')
     accelerator = 'gpu'
@@ -63,13 +64,13 @@ else:
     n_devices = None
     print('Device name: CPU')
 
-# Read trajectory -----
+# Read trajectory -------
 traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap) # idea is to use all available data to train model
 n_atoms = traj_.shape[2]
 traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=True, num_workers=4)
 print('_'*70+'\n')
 
-# Train model ---------
+# Train model -----------
 model = AE(n_atoms=n_atoms, latent_dim=lat)
 model = LightAE(model=model, lr=1e-4, weight_decay=0)
 
@@ -84,8 +85,9 @@ with open(out+fname+'_trainingLoss.dat', 'w') as fl:
         fl.write(f'{i:>8d}{loss:8.3f}')
 
 rmsd, r2, mean_squared_error = fitMetrics(model=model, dl=traj_dl, top=top)
+print('\n')
 
-# Compress -------------
+# Compress --------------
 torch.save(model, out+fname+'model.pt')
 
 encoder = model.model.encoder.to(device)
@@ -99,7 +101,7 @@ with torch.no_grad():
         z.append(encoder(batch))
 
 pickle.dump(z, open(out+fname+"_compressed.pkl", 'wb'))
-print('_'*70)
+print('_'*70+'\n')
 
 # Print stats -----------
 org_size = os.path.getsize(traj)
@@ -113,4 +115,13 @@ print(template.format(string='Compression %', value=round(compression,3)))
 print('---')
 print(template.format(string='RMSD [\u212B]', value=round(np.mean(rmsd),3)))
 print(template.format(string='R\u00b2', value=round(r2,3))) 
-print(template.format(string='MSE (nm\u00b2)', value=round(mean_squared_error,3))) 
+print(template.format(string='MSE (nm\u00b2)', value=round(mean_squared_error,3)))
+
+# Clean -----------------
+if os.path.exists('lightning_logs'):
+    shutil.rmtree('lightning_logs')
+if os.path.exists('temp_traj.dat'):
+    os.remove('temp_traj.dat')
+
+# End -------------------
+print('\n')
