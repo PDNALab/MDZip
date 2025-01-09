@@ -61,50 +61,36 @@ batch_size (int) : samples per batch to load [Default=128]
 
     return centered_xyz.reshape(-1,1,n_atoms,3)
 
-def rmsd_(model:LightAE, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_atoms:bool = True):
-    top = md.load_topology(top)
-    model.eval()
-    rmsd = []
-
-    with torch.no_grad():
-        for batch in tqdm(dl, total=dl.dataset.shape[0], bar_format='calculating RMSD : {percentage:6.2f}% |{bar}|', ncols=50):
-            pred_ = model(batch)
-            for y, y_ in zip(batch, pred_):
-                traj1 = md.Trajectory(y.detach().cpu().numpy().reshape(-1,3), top)
-                traj2 = md.Trajectory(y_.detach().cpu().numpy().reshape(-1,3), top)
-                if heavy_atoms:
-                    ha = traj1.topology.select('not element H')
-                    traj2.superpose(traj1, frame=0, atom_indices=ha)
-                    rmsd_value = md.rmsd(traj2, traj1, atom_indices=ha)
-                else:
-                    traj2.superpose(traj1, frame=0)
-                    rmsd_value = md.rmsd(traj2, traj1)
-                rmsd.append(float(rmsd_value[0]))
-    return np.array(rmsd) 
-
-def FitMetrics(model:LightAE, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_atoms:bool = True):
+def fitMetrics(model:LightAE, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_atoms:bool = True):
     top = md.load_topology(top)
     model.eval()
     k = dl.dataset.shape
     org_ = []
     pred_ = []
+    rmsd_ = []
 
     with torch.no_grad():
         for batch in tqdm(dl, bar_format='calculating Fit-Metrics : {percentage:6.2f}% |{bar}|', ncols=50):
             pred_.append(model(batch).detach().cpu().numpy().reshape(-1,k[2],3))
             org_.append(batch.detach().cpu().numpy().reshape(-1,k[2],3))
-
+            
         traj2 = md.Trajectory(np.concatenate(pred_), top)
         traj1 = md.Trajectory(np.concatenate(org_), top)
         del org_, pred_
         if heavy_atoms:
             ha = traj1.topology.select('not element H')
             traj2.superpose(traj1, frame=0, atom_indices=ha)
+            for i in range(traj1.n_frames):
+                rmsd_.append(md.rmsd(traj2[i], traj1[i], atom_indices=ha)[0])
         else:
             traj2.superpose(traj1, frame=0)
-        arr = np.vstack([traj1.xyz.flatten('F'), traj2.xyz.flatten('F')]).T
+            for i in range(traj1.n_frames):
+                rmsd_.append(md.rmsd(traj2[i], traj1[i]))
         
-    return r2_score(arr[:,0], arr[:,1]), mean_squared_error(arr[:,0], arr[:,1]), arr
+        arr = np.vstack([traj1.xyz.flatten('F'), traj2.xyz.flatten('F')]).T
+        rmsd = np.array(rmsd_)*10 # convert to angstroms
+    return rmsd, r2_score(arr[:,0], arr[:,1]), mean_squared_error(arr[:,0], arr[:,1])
+
 
 def approx_median(hist:np.ndarray, bin_edges:np.ndarray):
     max_bin_index = np.argmax(hist)

@@ -128,8 +128,8 @@ When idx is not None, it is assumed to be a list of tuples, where each tuple con
         self.training_losses.clear()
 
     def on_train_end(self):
-        print('Autoencoder training complete\n')
-        print('_'*70,'\n')
+        print('Autoencoder training complete')
+        print('_'*70+'\n')
         with open("losses.dat", "w") as f:
             for i, loss in enumerate(self.epoch_losses):
                 f.write(f'{i:4d}\t {loss:8.5f}\n')
