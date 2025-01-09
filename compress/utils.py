@@ -9,6 +9,10 @@ from autoencoder import *
 # import sys
 from torch.utils.data import DataLoader
 
+def pathExists(path):
+    if not os.path.exists(path):
+        raise FileNotFoundError(f'{path} does not exist')
+
 def read_traj(traj_:str, top_:str, memmap:bool=False, stride:int=1, chunk:int=1000):
     r"""
 Create a Dataloader to train compressor model.
@@ -63,7 +67,7 @@ def rmsd_(model:LightAE, dl:torch.utils.data.dataloader.DataLoader, top:str, hea
     rmsd = []
 
     with torch.no_grad():
-        for batch in tqdm(dl, bar_format='calculating RMSD : {percentage:6.2f}% |{bar}|', ncols=50):
+        for batch in tqdm(dl, total=dl.dataset.shape[0], bar_format='calculating RMSD : {percentage:6.2f}% |{bar}|', ncols=50):
             pred_ = model(batch)
             for y, y_ in zip(batch, pred_):
                 traj1 = md.Trajectory(y.detach().cpu().numpy().reshape(-1,3), top)
