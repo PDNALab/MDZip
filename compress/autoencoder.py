@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import pytorch_lightning as pl
-from utils import *
+from . import utils.*
 
 
 class RMSELoss(nn.Module):
