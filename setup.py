@@ -26,7 +26,7 @@ setup(
         'torchvision',
         'torchaudio',
         'pytorch-lightning',
-        'mdtraj >= 1.10.2',
+        'mdtraj',
         'scikit-learn',
         'numpy',
         'tqdm'
