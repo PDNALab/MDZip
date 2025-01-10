@@ -28,7 +28,7 @@ setup(
         'pytorch-lightning',
         'mdtraj >= 1.10.2',
         'scikit-learn',
-        'numpy >= 2.2.0',
+        'numpy',
         'tqdm'
     ],
     # entry_points={
