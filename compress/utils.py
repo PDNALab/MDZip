@@ -2,7 +2,6 @@ import mdtraj as md
 import numpy as np
 import os
 from tqdm import tqdm
-import time
 from sklearn.metrics import r2_score, mean_squared_error
 from autoencoder import *
 
