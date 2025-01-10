@@ -25,15 +25,16 @@ setup(
         'torch >= 2.5.1',
         'torchvision >= 2.5.1',
         'torchaudio >= 2.5.1',
+        'pytorch-lightning >= 2.4.0'
         'mdtraj >= 1.10.2',
         'scikit-learn >= 1.6.0',
         'numpy >= 2.2.0',
         'tqdm'
     ],
-    entry_points={
-        '[REDACTED]': [
-            'compress = [REDACTED].compress',
-            'decompress = [REDACTED].decompress',
-        ],
-    }
+    # entry_points={
+    #     '[REDACTED]': [
+    #         'compress = [REDACTED].compress',
+    #         'decompress = [REDACTED].decompress',
+    #     ],
+    # }
 )
