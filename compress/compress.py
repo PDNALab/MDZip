@@ -11,7 +11,7 @@ import os
 import shutil
 
 from .utils import *
-from autoencoder import *
+from .autoencoder import *
 
 torch.set_float32_matmul_precision('medium')
 
