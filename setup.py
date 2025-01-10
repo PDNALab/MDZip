@@ -27,7 +27,7 @@ setup(
         'torchaudio',
         'pytorch-lightning',
         'mdtraj >= 1.10.2',
-        'scikit-learn >= 1.6.0',
+        'scikit-learn',
         'numpy >= 2.2.0',
         'tqdm'
     ],
