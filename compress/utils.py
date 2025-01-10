@@ -3,7 +3,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 from sklearn.metrics import r2_score, mean_squared_error
-from autoencoder import *
+from .autoencoder import *
 
 # import sys
 from torch.utils.data import DataLoader
