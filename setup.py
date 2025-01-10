@@ -22,7 +22,7 @@ setup(
     ],
     python_requires='>=3.6',    # Specify minimum Python version
     install_requires=[  
-        'torch,
+        'torch',
         'torchvision',
         'torchaudio',
         'pytorch-lightning',
