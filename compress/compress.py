@@ -80,9 +80,9 @@ trainer = pl.Trainer(max_epochs=epochs, accelerator=accelerator, devices=n_devic
 trainer.fit(model, traj_dl)
 
 with open(out+fname+'_trainingLoss.dat', 'w') as fl:
-    fl.write(f'{'#epoch':>8}\t{'RMSE (nm)':>10}')
+    fl.write(f"{'#epoch':>8}\t{'RMSE (nm)':>10}")
     for i, loss in enumerate(model.epoch_losses):
-        fl.write(f'{i:>8d}{loss:8.3f}')
+        fl.write(f"{i:>8d}{loss:8.3f}")
 
 rmsd, r2, mean_squared_error = fitMetrics(model=model, dl=traj_dl, top=top)
 print('\n')
