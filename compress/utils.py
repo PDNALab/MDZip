@@ -60,7 +60,7 @@ batch_size (int) : samples per batch to load [Default=128]
 
     return centered_xyz.reshape(-1,1,n_atoms,3)
 
-def fitMetrics(model:LightAE, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_atoms:bool = True):
+def fitMetrics(model:autoencoder.LightAE, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_atoms:bool = True):
     top = md.load_topology(top)
     model.eval()
     k = dl.dataset.shape
