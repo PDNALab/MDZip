@@ -1,6 +1,6 @@
 # MolZip
-### Author: Namindu De Silva, Alberto Perez
-
+### Author: Namindu De Silva
+#
 <Description>
 
 ## Dependencies
