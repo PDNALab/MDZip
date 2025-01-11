@@ -23,7 +23,7 @@ setup(
     python_requires='>=3.6',    # Specify minimum Python version
     install_requires=[  
         'wheel',
-        'torch==2.5.1+cu117',
+        'torch==2.5.1',
         'torchvision',
         'torchaudio',
         'pytorch-lightning',
