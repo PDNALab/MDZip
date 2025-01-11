@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='compress',  # Replace with your package name
+    name='molzip',  # Replace with your package name
     version='0.1.0',      # Replace with your package version
     author='Namindu De Silva',
     author_email='nami.rangana@gmail.com',
