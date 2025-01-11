@@ -1,9 +1,9 @@
 # MolZip
-## Author: Namindu De Silva, Alberto Perez
+### Author: Namindu De Silva, Alberto Perez
 
 <Description>
 
-### Dependencies
+## Dependencies
 The `dim` library makes extensive use of `numpy` and `sklearn` and `graphtime`.
 - python >= 3.6.0
 - wheel
@@ -16,8 +16,8 @@ The `dim` library makes extensive use of `numpy` and `sklearn` and `graphtime`.
 - numpy
 - tqdm
 
-### Installation
-#### Linux/Windows with CUDA
+## Installation
+### Linux/Windows with CUDA
 Create conda environment
 ```
 conda create -n <my-env> python=3.10
@@ -29,16 +29,29 @@ conda install -c confa-forge mdtraj
 pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
 pip install lightning
 ```
-Clone and Install MolZip
+Install MolZip
 ```
 git clone https://github.com/nami-rangana/MolZip.git
 cd MolZip
 python setup.py sdist bdist_wheel
-pip install dist/
+cd dist
+pip insall molzip-0.1.0-py3-none-any.whl
 ```
 
-#### 
-### Usage
+### Linux/Windows/OSX without CUDA
+```
+conda create -n <my-env> python=3.10
+conda activate <my-env>
+conda install -c confa-forge mdtraj
+
+git clone https://github.com/nami-rangana/MolZip.git
+cd MolZip
+python setup.py sdist bdist_wheel
+cd dist
+pip insall molzip-0.1.0-py3-none-any.whl
+```
+
+## Usage
 1. Clone the repository:
 ```
 git clone https://github.com/PDNALab/DIM.git 
