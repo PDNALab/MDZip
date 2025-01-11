@@ -24,7 +24,7 @@ setup(
     install_requires=[  
         'wheel',
         'mdtraj',
-        'torch==2.5.1',
+        'torch',
         'torchvision',
         'torchaudio',
         'pytorch-lightning',
