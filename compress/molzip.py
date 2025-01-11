@@ -1,0 +1,175 @@
+import warnings
+warnings.filterwarnings("ignore")
+
+import torch
+from torch.utils.data import Dataset, DataLoader
+import pytorch_lightning as pl
+import pickle
+import numpy
+import argparse
+import os
+import shutil
+from tqdm import tqdm
+
+from .utils import *
+from .autoencoder import *
+
+torch.set_float32_matmul_precision('medium')
+
+
+# -------------------------------------------- 
+#             C O M P R E S S                  
+# -------------------------------------------- 
+
+def compress(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, memmap:bool=False):
+    r'''
+compressing algorithm
+---------------------
+traj (str) : Path to the trajectory file
+top (str) : Path to the topology file
+stride (int) : Read every strid-th frame [Default=1]
+out (str) : Path to save compressed files [Default=current directory]
+fname (str) : Prefix for all generated files [Default=None]
+epochs (int) : Number of epochs to train AE model [Default=100]
+batchSize (int) : Batch size to train AE model [Default=128]
+lat (int) : Latent vector length [Default=20]
+memmap (bool) : Use memory-map to read trajectory [Default=False]
+        '''
+    
+    pathExists(traj)
+    pathExists(top)
+    pathExists(out)
+
+    if not out.endswith('/'):
+        out += '/'
+
+    if len(fname) != 0:
+        fname += '_'
+        
+# Define device ---------
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+        accelerator = 'gpu'
+        n_devices = 1
+        print('Device name:', torch.cuda.get_device_name(device))
+    else:
+        device = torch.device('cpu')
+        accelerator = 'cpu'
+        n_devices = None
+        print('Device name: CPU')
+
+# Read trajectory -------
+    traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
+    n_atoms = traj_.shape[2]
+    traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=True, num_workers=4)
+    print('_'*70+'\n')
+
+    # Train model -----------
+    model = AE(n_atoms=n_atoms, latent_dim=lat)
+    model = LightAE(model=model, lr=1e-4, weight_decay=0)
+
+    print('Training Deep Convolutional AutoEncoder model')
+
+    trainer = pl.Trainer(max_epochs=epochs, accelerator=accelerator, devices=n_devices)
+    trainer.fit(model, traj_dl)
+
+    with open(out+fname+'trainingLoss.dat', 'w') as fl:
+        fl.write(f"{'#epoch':>8}\t{'RMSE (nm)':>10}")
+        for i, loss in enumerate(model.epoch_losses):
+            fl.write(f"{i:>8d}{loss:8.3f}")
+
+    rmsd, r2, mean_squared_error = fitMetrics(model=model, dl=traj_dl, top=top)
+    print('\n')
+
+    # Compress --------------
+    torch.save(model, out+fname+'model.pt')
+
+    encoder = model.model.encoder.to(device)
+    traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=False, drop_last=False, num_workers=4) 
+
+    z = []
+    with torch.no_grad():
+        encoder.eval()
+        for batch in tqdm(traj_dl, desc="Compressing "):
+            batch = batch.to(device=device, dtype=torch.float32)
+            z.append(encoder(batch))
+    
+    pickle.dump(z, open(out+fname+"compressed.pkl", 'wb'))
+    print('_'*70+'\n')
+
+    # Print stats -----------
+    org_size = os.path.getsize(traj)
+    comp_size = os.path.getsize(out+fname+"_compressed.pkl")
+    compression = 100*(1 - comp_size/org_size)
+    
+    template = "{string:<20} :{value:15.3f}"
+    print(template.format(string='Original Size [MB]', value=round(org_size*1e-6,3)))
+    print(template.format(string='Compressed Size [MB]', value=round(comp_size*1e-6,3)))
+    print(template.format(string='Compression %', value=round(compression,3)))
+    print('---')
+    print(template.format(string='RMSD [\u212B]', value=round(np.mean(rmsd),3)))
+    print(template.format(string='R\u00b2', value=round(r2,3))) 
+    print(template.format(string='MSE (nm\u00b2)', value=round(mean_squared_error,3)))
+    
+    # Clean -----------------
+    if os.path.exists('lightning_logs'):
+        shutil.rmtree('lightning_logs')
+    if os.path.exists('temp_traj.dat'):
+        os.remove('temp_traj.dat')
+
+    print('\n')
+
+
+
+# -------------------------------------------- 
+#            D E C O M P R E S S                  
+# -------------------------------------------- 
+
+def decompress(top:str, model:str, compressed:str, out:str):
+    r'''
+top (str) : Path to the topology file (parm7|pdb)
+model (str) : Path to the saved model file
+compressed (str) : Path to the compressed trajectory file
+out (str) : Output trajectory file path with name. Use extention to define file type (*.nc|*.xtc)
+    '''
+    pathExists(top)
+    pathExists(model)
+    pathExists(compressed)
+    pathExists(os.path.dirname(out))
+        
+    if top.endswith('parm7'):
+        top = md.load_prmtop(top)
+    elif top.endswith('pdb'):
+        top = md.load_pdb(top).topology
+    else:
+        raise ValueError('Supported formats: .parm7, .pdb')
+    
+    # Define device ---------
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+        print('Device name:', torch.cuda.get_device_name(device))
+    else:
+        device = torch.device('cpu')
+        print('Device name: CPU')
+    
+    # Decompress ------------
+    decoder = torch.load(model).to(device).model.decoder
+    compressed = torch.concatenate(pickle.load(open(compressed, 'rb')))
+    
+    with torch.no_grad():
+        decoder.eval()
+    
+        if out.endswith('.nc'):
+            traj_file = md.formats.netcdf.NetCDFTrajectoryFile(out, 'w')
+        elif out.endswith('.xtc'):
+            traj_file = md.formats.xtc.XTCTrajectoryFile(out, 'w')
+        else:
+            raise ValueError('Supported formats: .nc, .xtc')
+    
+        with traj_file as f:
+            for i in tqdm(range(len(compressed)), desc='Compressing '):
+                np_traj_frame = decoder(comp[i].reshape(1, -1)).detach().cpu().numpy()
+                np_traj_frame = np_traj_frame.reshape(-1, np_traj_frame.shape[2], 3)
+                f.write(np_traj_frame)
+    
+    print('\n')

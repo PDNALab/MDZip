@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 setup(
     name='compress',  # Replace with your package name
     version='0.1.0',      # Replace with your package version
-    author='namindu De Silva',
+    author='Namindu De Silva',
     author_email='nami.rangana@gmail.com',
     description='Compress MD trajectories using deep convolutional autoencoder',
     long_description=open('README.md').read(),
@@ -22,7 +22,8 @@ setup(
     ],
     python_requires='>=3.6',    # Specify minimum Python version
     install_requires=[  
-        'torch',
+        'wheel',
+        'torch==2.5.1+cu117',
         'torchvision',
         'torchaudio',
         'pytorch-lightning',

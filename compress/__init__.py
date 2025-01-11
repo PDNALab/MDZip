@@ -1,6 +1,3 @@
-# from . import autoencoder
-# from . import utils
-from . import compress
-from . import decompress
+from . import molzip
 
 __version__ = '0.1.0'
