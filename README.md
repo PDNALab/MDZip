@@ -4,8 +4,28 @@ ___
 <Description>
 
 ## Dependencies
-The `dim` library makes extensive use of `numpy` and `sklearn` and `graphtime`.
-- python >= 3.6.0
+
+<div style="display: flex;">
+<div style="width: 50%;">
+<ul>
+<li>python >= 3.6.0</li>
+<li>wheel</li>
+<li>torch</li>
+<li>torchvision</li>
+<li>torchaudio</li>
+</ul>
+</div>
+<div style="width: 50%;">
+<ul>
+<li>pytorch-lightning</li>
+<li>scikit-learn</li>
+<li>mdtraj</li>
+<li>numpy</li>
+<li>tqdm</li>
+</ul>
+</div>
+</div>
+<!-- - 
 - wheel
 - mdtraj
 - torch
@@ -14,7 +34,7 @@ The `dim` library makes extensive use of `numpy` and `sklearn` and `graphtime`.
 - pytorch-lightning
 - scikit-learn
 - numpy
-- tqdm
+- tqdm -->
 
 ## Installation
 ### Linux/Windows with CUDA
@@ -51,41 +71,6 @@ cd dist
 pip insall molzip-0.1.0-py3-none-any.whl
 ```
 
-## Usage
-1. Clone the repository:
-```
-git clone https://github.com/PDNALab/DIM.git 
-```
+## Cite
 
-2. Append path: Befor importing DIM module, please append the path as shown.
-```
-import sys
-sys.path.append('<path to dim>')
-
-from dim import utils
-from dim import dimgen as dim 
-```
-
-3. Main functions:
-- Make dim object for arbitary DNA sequence. [sequence is given 5'-3']
-```
-# Load DMRF object - pre learned from ABC data
-with open('<path to dim>/dim/gen_data/dmrf_tetramer_20_4.dmrf', 'rb') as f:
-    dmrf = pickle.load(f)
-
-# Make dim object
-DNA = dim.dim(seq='ATGCATGC', dmrf=dmrf)
-```
-- Free energy
-```
-# For smaller DNA sequences:
-Free_energy1 = DNA.get_free_energy1()
-
-# When DNA sequences have more sub-systems [faster method]:
-Free_energy2 = get_free_energy2(cut=10)
-```
-- Transition matrix
-```
-T_mat = DNA.get_transition_matrix()
-```
-install pytorch packages with cuda: https://www.restack.io/p/pytorch-lightning-answer-cuda-11-7-cat-ai
+Fill here
