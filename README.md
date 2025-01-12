@@ -1,5 +1,5 @@
 # MolZip
-> ### Author: Namindu De Silva
+#### _Author: Namindu De Silva_
 ___
 [Add Description Here]
 
