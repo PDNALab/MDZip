@@ -1,6 +1,6 @@
 # MolZip
-#### _Author: Namindu De Silva_
 ___
+#### _Author: Namindu De Silva_
 [Add Description Here]
 
 ## Dependencies
