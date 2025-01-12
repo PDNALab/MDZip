@@ -8,6 +8,7 @@ import pickle
 import numpy
 import argparse
 import os
+import platform
 import shutil
 from tqdm import tqdm
 
@@ -38,14 +39,20 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     
     pathExists(traj)
     pathExists(top)
-    pathExists(out)
-
-    if not out.endswith('/'):
-        out += '/'
 
     if len(fname) != 0:
         fname += '_'
-        
+    
+    if platform.system() == "Windows":
+        if not out.endswith('\\'):
+            out += '\\'
+    else:
+        if not out.endswith('/'):
+            out += '/'
+
+    os.mkdir(out+fname+'compressed')
+    out = out+fname+'compressed\\' if platform.system() == "Windows" else out+fname+'compressed/'
+    
 # Define device ---------
     if torch.cuda.is_available():
         device = torch.device('cuda')
