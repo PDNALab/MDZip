@@ -53,8 +53,8 @@ pip insall molzip-0.1.0-py3-none-any.whl
 ```
 molzip.compress()
 
-compressing algorithm
----------------------
+compressing trajectory
+----------------------
 traj (str) : Path to the trajectory file
 top (str) : Path to the topology file
 stride (int) : Read every strid-th frame [Default=1]
