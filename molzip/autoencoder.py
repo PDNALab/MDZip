@@ -48,6 +48,7 @@ latent_dim (int) : compressed latent vector length [Default=20]
             nn.LeakyReLU(0.2, inplace=True),
             
             nn.Linear(256, latent_dim),
+            nn.BatchNorm1d(latent_dim),
             nn.LeakyReLU(0.2, inplace=True)
         )
         

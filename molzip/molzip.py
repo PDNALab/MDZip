@@ -24,8 +24,8 @@ torch.set_float32_matmul_precision('medium')
 
 def compress(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, memmap:bool=False):
     r'''
-compressing algorithm
----------------------
+compressing trajectory
+----------------------
 traj (str) : Path to the trajectory file
 top (str) : Path to the topology file
 stride (int) : Read every strid-th frame [Default=1]
@@ -134,6 +134,8 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 
 def decompress(top:str, model:str, compressed:str, out:str):
     r'''
+decompress compressed-trajectory
+--------------------------------
 top (str) : Path to the topology file (parm7|pdb)
 model (str) : Path to the saved model file
 compressed (str) : Path to the compressed trajectory file

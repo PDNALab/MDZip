@@ -49,6 +49,33 @@ cd dist
 pip insall molzip-0.1.0-py3-none-any.whl
 ```
 
+## Help
+```
+molzip.compress()
+
+compressing algorithm
+---------------------
+traj (str) : Path to the trajectory file
+top (str) : Path to the topology file
+stride (int) : Read every strid-th frame [Default=1]
+out (str) : Path to save compressed files [Default=current directory]
+fname (str) : Prefix for all generated files [Default=None]
+epochs (int) : Number of epochs to train AE model [Default=100]
+batchSize (int) : Batch size to train AE model [Default=128]
+lat (int) : Latent vector length [Default=20]
+memmap (bool) : Use memory-map to read trajectory [Default=False]
+```
+```
+molzip.decompress()
+
+decompress compressed-trajectory
+--------------------------------
+top (str) : Path to the topology file (parm7|pdb)
+model (str) : Path to the saved model file
+compressed (str) : Path to the compressed trajectory file
+out (str) : Output trajectory file path with name. Use extention to define file type (*.nc|*.xtc)
+```
+
 ## Cite
 
 Fill here
