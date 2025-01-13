@@ -1,7 +1,7 @@
 # MolZip
 ___
 #### _Author: Namindu De Silva_
-![molzip](.molzip.jpg)
+![molzip](molzip.jpg)
 [Add Description Here]
 
 ## Dependencies
