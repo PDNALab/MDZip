@@ -30,12 +30,12 @@ latent_dim (int) : compressed latent vector length [Default=20]
         self.encoder = nn.Sequential(
             ##(N,1,n_atoms,03)
             nn.Conv2d(1,n_channels,kernel_size=(n_atoms,1), bias=True), #(N,4096,1,3)
-            nn.LeakyReLU(0.2, inplace=True),
             nn.BatchNorm2d(n_channels),
+            nn.LeakyReLU(0.2, inplace=True),
             
             nn.Conv2d(n_channels,n_channels//4,kernel_size=(1,3), bias=True), #(N,1024,1,1)
-            nn.LeakyReLU(0.2, inplace=True),
             nn.BatchNorm2d(n_channels//4),
+            nn.LeakyReLU(0.2, inplace=True),
             
             nn.Flatten(),
             
@@ -48,7 +48,7 @@ latent_dim (int) : compressed latent vector length [Default=20]
             nn.LeakyReLU(0.2, inplace=True),
             
             nn.Linear(256, latent_dim),
-            nn.ReLU()
+            nn.LeakyReLU(0.2, inplace=True)
         )
         
         self.decoder = nn.Sequential(
