@@ -25,7 +25,7 @@ conda activate <my-env>
 ```
 Install dependencies (recomended for CUDA build)
 ```
-conda install -c confa-forge mdtraj
+conda install -c conda-forge mdtraj
 pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
 pip install lightning
 ```
