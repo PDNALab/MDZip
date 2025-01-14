@@ -78,7 +78,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 
     # Train model -----------
     model = AE(n_atoms=n_atoms, latent_dim=lat)
-    model = LightAE(model=model, lr=1e-4, weight_decay=0, w=w)
+    model = LightAE(model=model, lr=1e-4, w=w)
 
     print('Training Deep Convolutional AutoEncoder model')
 
