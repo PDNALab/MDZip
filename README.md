@@ -64,6 +64,7 @@ fname (str) : Prefix for all generated files [Default=None]
 epochs (int) : Number of epochs to train AE model [Default=100]
 batchSize (int) : Batch size to train AE model [Default=128]
 lat (int) : Latent vector length [Default=20]
+w (float) : Non-negative weight for loss function [Default=1.0]
 memmap (bool) : Use memory-map to read trajectory [Default=False]
 ```
 ```
