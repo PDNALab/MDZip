@@ -52,7 +52,7 @@ pip insall molzip-0.1.0-py3-none-any.whl
 
 ## Help
 ```
-molzip.compress()
+compress(traj: str, top: str, stride: int = 1, out: str = '/blue/alberto.perezant/t.desilva/MolZip/testing', fname: str = '', epochs: int = 100, batchSize: int = 128, lat: int = 20, w: float = 1.0, memmap: bool = False)
 
 compressing trajectory
 ----------------------
@@ -67,7 +67,7 @@ lat (int) : Latent vector length [Default=20]
 memmap (bool) : Use memory-map to read trajectory [Default=False]
 ```
 ```
-molzip.decompress()
+decompress(top: str, model: str, compressed: str, out: str)
 
 decompress compressed-trajectory
 --------------------------------
