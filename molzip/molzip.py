@@ -53,7 +53,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     os.mkdir(out+fname+'compressed')
     out = out+fname+'compressed\\' if platform.system() == "Windows" else out+fname+'compressed/'
     
-# Define device ---------
+    # Define device ---------
     if torch.cuda.is_available():
         device = torch.device('cuda')
         accelerator = 'gpu'
@@ -70,7 +70,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         n_devices = None
         print('CUDA is not available')
 
-# Read trajectory -------
+    # Read trajectory -------
     traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
     n_atoms = traj_.shape[2]
     traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=True, num_workers=4)
