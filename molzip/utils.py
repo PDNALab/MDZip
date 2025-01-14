@@ -1,16 +1,39 @@
+import torch
 import mdtraj as md
 import numpy as np
+import random
 import os
 from tqdm import tqdm
 from sklearn.metrics import r2_score, mean_squared_error
+
 from .autoencoder import *
 
-# import sys
-from torch.utils.data import DataLoader
+# from torch.utils.data import DataLoader
 
-def pathExists(path):
+def set_seed(seed:int=42):
+    r'''
+Set seed for the module
+-----------------------
+seed (int) : seed
+    '''
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+        
+
+def pathExists(path:str):
+    r'''
+Check if the given path exists
+------------------------------
+path (str) : path to check existance
+    '''
     if not os.path.exists(path):
         raise FileNotFoundError(f'{path} does not exist')
+        
 
 def read_traj(traj_:str, top_:str, memmap:bool=False, stride:int=1, chunk:int=1000):
     r"""
@@ -59,8 +82,17 @@ batch_size (int) : samples per batch to load [Default=128]
         centered_xyz.flush()
 
     return centered_xyz.reshape(-1,1,n_atoms,3)
+    
 
 def fitMetrics(model, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_atoms:bool = True):
+    r'''
+Calculate rmsd, r2_score and MSE
+--------------------------------
+model : Trained model
+dl : DataLoader
+top (str) : Path to topology file
+heavy_atoms (bool) : Caculate the fit-metrics only for heavy atoms if True, else calculte fit-metrics for all atoms
+    '''
     top = md.load_topology(top)
     model.eval()
     k = dl.dataset.shape
@@ -89,15 +121,5 @@ def fitMetrics(model, dl:torch.utils.data.dataloader.DataLoader, top:str, heavy_
         arr = np.vstack([traj1.xyz.flatten('F'), traj2.xyz.flatten('F')]).T
         rmsd = np.array(rmsd_)*10 # convert to angstroms
     return rmsd, r2_score(arr[:,0], arr[:,1]), mean_squared_error(arr[:,0], arr[:,1])
-
-
-def approx_median(hist:np.ndarray, bin_edges:np.ndarray):
-    max_bin_index = np.argmax(hist)
-    max_bin_start = bin_edges[max_bin_index]
-    max_bin_end = bin_edges[max_bin_index + 1]
     
-    mid_point = (max_bin_start + max_bin_end) / 2
-    bin_length = max_bin_end - max_bin_start
-
-    return mid_point, bin_length/2
     

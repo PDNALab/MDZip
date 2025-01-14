@@ -5,13 +5,20 @@ import pytorch_lightning as pl
 from .utils import *
 
 
-class RMSELoss(nn.Module):
+class Loss(nn.Module):
+    r'''
+Loss function
+    '''
     def __init__(self):
-        super(RMSELoss, self).__init__()
-
-    def forward(self, recon, x):
+        super(Loss, self).__init__()
+        
+    def dist_mat(self, coords):
+        return(torch.cdist(coords,coords))
+        
+    def forward(self, recon, x, w:float=1.0):
         rmse = torch.sqrt(torch.mean((recon - x) ** 2))
-        return rmse
+        rmse_d = torch.sqrt(torch.mean((self.dist_mat(recon) - self.dist_mat(x)) ** 2))
+        return rmse + w*(rmse_d)
 
 class AE(nn.Module):
     def __init__(self, n_atoms:int, latent_dim:int=20, n_channels:int=4096):
@@ -82,7 +89,7 @@ latent_dim (int) : compressed latent vector length [Default=20]
 
 
 class LightAE(pl.LightningModule):
-    def __init__(self, model, lr=1e-4, weight_decay=0, idx=None):
+    def __init__(self, model, lr=1e-4, idx=None, w:float=1.0):
         r'''
 pytorch-Lightning AutoEncoder
 -----------------------------
@@ -94,8 +101,9 @@ When idx is not None, it is assumed to be a list of tuples, where each tuple con
         '''
         super().__init__()
         self.model = model
-        self.loss_fn = RMSELoss()
-        self.optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+        self.w = w
+        self.loss_fn = Loss()
+        self.optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
         self.idx = idx
         self.training_losses = []
         self.epoch_losses = []
@@ -105,9 +113,9 @@ When idx is not None, it is assumed to be a list of tuples, where each tuple con
 
     def _calculate_loss(self, x, recon, idx):
         if idx is None:
-            return self.loss_fn(recon, x)
+            return self.loss_fn(recon, x, w=self.w)
         else:
-            return sum(self.loss_fn(x[:, i[0]:i[1]], recon[:, i[0]:i[1]]) for i in idx)
+            return sum(self.loss_fn(x[:, i[0]:i[1]], recon[:, i[0]:i[1]], w=self.w) for i in idx)
 
     def training_step(self, batch, batch_idx):
         x = batch.to(self.device)

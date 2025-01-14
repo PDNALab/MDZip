@@ -15,14 +15,13 @@ from tqdm import tqdm
 from .utils import *
 from .autoencoder import *
 
-torch.set_float32_matmul_precision('medium')
-
+set_seed()
 
 # -------------------------------------------- 
 #             C O M P R E S S                  
 # -------------------------------------------- 
 
-def compress(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, memmap:bool=False):
+def compress(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, w:float=1.0, memmap:bool=False):
     r'''
 compressing trajectory
 ----------------------
@@ -34,6 +33,7 @@ fname (str) : Prefix for all generated files [Default=None]
 epochs (int) : Number of epochs to train AE model [Default=100]
 batchSize (int) : Batch size to train AE model [Default=128]
 lat (int) : Latent vector length [Default=20]
+w (float) : Non-negative weight for loss function [Default=1.0]
 memmap (bool) : Use memory-map to read trajectory [Default=False]
         '''
     
@@ -57,13 +57,18 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     if torch.cuda.is_available():
         device = torch.device('cuda')
         accelerator = 'gpu'
-        n_devices = 1
-        print('Device name:', torch.cuda.get_device_name(device))
+        n_devices = torch.cuda.device_count()
+        if n_devices == 1:
+            print('Device name:', torch.cuda.get_device_name(device))
+        else:
+            print(f'Available devices: {n_devices:>02d}')
+            for i in range(n_devices):
+                print(torch.cuda.get_device_name(i))
     else:
         device = torch.device('cpu')
         accelerator = 'cpu'
         n_devices = None
-        print('Device name: CPU')
+        print('CUDA is not available')
 
 # Read trajectory -------
     traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
@@ -73,7 +78,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 
     # Train model -----------
     model = AE(n_atoms=n_atoms, latent_dim=lat)
-    model = LightAE(model=model, lr=1e-4, weight_decay=0)
+    model = LightAE(model=model, lr=1e-4, weight_decay=0, w=w)
 
     print('Training Deep Convolutional AutoEncoder model')
 
@@ -125,8 +130,6 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         os.remove('temp_traj.dat')
 
     print('\n')
-
-
 
 # -------------------------------------------- 
 #            D E C O M P R E S S                  
