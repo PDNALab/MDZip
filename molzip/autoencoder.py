@@ -24,8 +24,8 @@ Loss function
         return tensor1, tensor2
         
     def forward(self, recon, x, w:float=1.0):
-        coord1, coord2 = minMax_scale(recon, x)
-        dist1, dist2 = minMax_scale(self.dist_mat(recon), self.dist_mat(x))
+        coord1, coord2 = self.minMax_scale(recon, x)
+        dist1, dist2 = self.minMax_scale(self.dist_mat(recon), self.dist_mat(x))
         rmse = torch.sqrt(torch.mean((coord1 - coord2) ** 2))
         rmse_d = torch.sqrt(torch.mean((dist1 - dist2) ** 2))
         return rmse + w*(rmse_d)
