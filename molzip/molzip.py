@@ -50,6 +50,8 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         if not out.endswith('/'):
             out += '/'
 
+    if os.path.exists(out+fname+'compressed'):
+        shutil.rmtree(out+fname+'compressed')
     os.mkdir(out+fname+'compressed')
     out = out+fname+'compressed\\' if platform.system() == "Windows" else out+fname+'compressed/'
     
