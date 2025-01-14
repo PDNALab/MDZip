@@ -14,10 +14,20 @@ Loss function
         
     def dist_mat(self, coords):
         return(torch.cdist(coords,coords))
+
+    def minMax_scale(self, tensor1, tensor2):
+        stacked_tensor = torch.stack([tensor1, tensor2])
+        min_val = torch.min(stacked_tensor).item()
+        max_val = torch.max(stacked_tensor).item()
+        tensor1 =  (tensor1 - min_val) / (max_val - min_val)
+        tensor2 =  (tensor2 - min_val) / (max_val - min_val)
+        return tensor1, tensor2
         
     def forward(self, recon, x, w:float=1.0):
-        rmse = torch.sqrt(torch.mean((recon - x) ** 2))
-        rmse_d = torch.sqrt(torch.mean((self.dist_mat(recon) - self.dist_mat(x)) ** 2))
+        coord1, coord2 = minMax_scale(recon, x)
+        dist1, dist2 = minMax_scale(self.dist_mat(recon), self.dist_mat(x))
+        rmse = torch.sqrt(torch.mean((coord1 - coord2) ** 2))
+        rmse_d = torch.sqrt(torch.mean((dist1 - dist2) ** 2))
         return rmse + w*(rmse_d)
 
 class AE(nn.Module):
