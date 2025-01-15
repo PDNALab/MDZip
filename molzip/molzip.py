@@ -113,7 +113,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 
     # Print stats -----------
     org_size = os.path.getsize(traj)
-    comp_size = os.path.getsize(out+fname+"_compressed.pkl")
+    comp_size = os.path.getsize(out+fname+"compressed.pkl")
     compression = 100*(1 - comp_size/org_size)
     
     template = "{string:<20} :{value:15.3f}"
