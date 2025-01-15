@@ -99,7 +99,7 @@ latent_dim (int) : compressed latent vector length [Default=20]
 
 
 class LightAE(pl.LightningModule):
-    def __init__(self, model, lr=1e-4, idx=None, w:float=1.0):
+    def __init__(self, model, lr=1e-4, idx=None, w:float=1.0, loss_path:str=os.getcwd()+"losses.dat"):
         r'''
 pytorch-Lightning AutoEncoder
 -----------------------------
@@ -108,6 +108,7 @@ lr (float, Tensor, optional) : learning rate [default: 1e-4]
 weight_decay (float, optional) : weight decay (L2 penalty) [default=0]
 idx : a list of indices or a list of tuples of indices that specify a subset of the data x and recon to be used in the loss calculation. [Default=None]
 When idx is not None, it is assumed to be a list of tuples, where each tuple contains two indices i[0] and i[1]. These indices are used to slice the data x and recon along the first axis (i.e., x[:, i[0]:i[1]] and recon[:, i[0]:i[1]]). The loss is then calculated for each slice separately, and the results are summed up.
+loss_path (str) : File path to save losses file [Default=<currunt dir>/losses.dat.
         '''
         super().__init__()
         self.model = model
@@ -117,6 +118,7 @@ When idx is not None, it is assumed to be a list of tuples, where each tuple con
         self.idx = idx
         self.training_losses = []
         self.epoch_losses = []
+        self.loss_path = loss_path
 
     def forward(self, x):
         return self.model(x)
@@ -148,7 +150,7 @@ When idx is not None, it is assumed to be a list of tuples, where each tuple con
     def on_train_end(self):
         print('Autoencoder training complete')
         print('_'*70+'\n')
-        with open("losses.dat", "w") as f:
+        with open(self.loss_path, "w") as f:
             for i, loss in enumerate(self.epoch_losses):
                 f.write(f'{i:4d}\t {loss:8.5f}\n')
 
