@@ -1,6 +1,6 @@
 # MolZip
 ___
-#### _Author: Namindu De Silva_
+#### [_Author: Namindu De Silva_](https://github.com/nami-rangana)
 ![molzip](molzip.jpg)
 [Add Description Here]
 
