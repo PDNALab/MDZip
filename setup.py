@@ -19,6 +19,7 @@ setup(
     install_requires=[  
         'wheel',
         'mdtraj',
+        'mdanalysis',
         'torch',
         'torchvision',
         'torchaudio',
