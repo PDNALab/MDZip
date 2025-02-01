@@ -99,7 +99,7 @@ latent_dim (int) : compressed latent vector length [Default=20]
 
 
 class LightAE(pl.LightningModule):
-    def __init__(self, model, lr=1e-4, idx=None, w:float=1.0, loss_path:str=os.getcwd()+"losses.dat"):
+    def __init__(self, model, lr=1e-4, idx=None, w:float=1.0, loss_path:str=os.getcwd()+"losses.dat", epoch_losses=None):
         r'''
 pytorch-Lightning AutoEncoder
 -----------------------------
@@ -117,7 +117,7 @@ loss_path (str) : File path to save losses file [Default=<currunt dir>/losses.da
         self.optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
         self.idx = idx
         self.training_losses = []
-        self.epoch_losses = []
+        self.epoch_losses = epoch_losses if epoch_losses is not None else []
         self.loss_path = loss_path
 
     def forward(self, x):
@@ -137,10 +137,6 @@ loss_path (str) : File path to save losses file [Default=<currunt dir>/losses.da
         self.training_losses.append(loss.detach().cpu().item())
         return {'loss': loss}
 
-    # def on_train_epoch_end(self):
-    #     avg_train_loss = torch.tensor(self.training_losses).mean()
-    #     self.log('avg_train_loss', avg_train_loss, prog_bar=True, logger=True)
-    #     self.training_losses.clear()
     def on_train_epoch_end(self):
         epoch_loss = torch.tensor(self.training_losses).mean()
         self.log('Epoch Loss', epoch_loss, prog_bar=True, logger=False)
@@ -152,7 +148,7 @@ loss_path (str) : File path to save losses file [Default=<currunt dir>/losses.da
         print('_'*70+'\n')
         with open(self.loss_path, "w") as f:
             for i, loss in enumerate(self.epoch_losses):
-                f.write(f'{i:4d}\t {loss:8.5f}\n')
+                f.write(f'{i:>8d}\t {loss:8.5f}\n')
 
     def configure_optimizers(self):
         return self.optimizer

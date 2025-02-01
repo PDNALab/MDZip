@@ -3,6 +3,7 @@ import mdtraj as md
 import numpy as np
 import random
 import os
+import MDAnalysis as mda
 from tqdm import tqdm
 from sklearn.metrics import r2_score, mean_squared_error, silhouette_score
 from sklearn.decomposition import PCA
@@ -35,10 +36,10 @@ Check if the given path exists
 path (str) : path to check existance
     '''
     if not os.path.exists(path):
-        raise FileNotFoundError(f'{path} does not exist')
-        
+        raise FileNotFoundError(f'{path} does not exist') 
 
-def read_traj(traj_:str, top_:str, memmap:bool=False, stride:int=1, chunk:int=1000):
+
+def read_traj(traj_:str, top_:str, memmap:bool=False, stride:int=1, chunk:int=100):
     r"""
 Create a Dataloader to train compressor model.
 ----------------------------------------------
@@ -51,10 +52,10 @@ batch_size (int) : samples per batch to load [Default=128]
     """
     if chunk < stride:
         raise ValueError('chunk should be higher than stride')
-        
-    with md.open(traj_, 'r') as t:  # Open in read-only mode
-        n_frames = t.n_frames
-        n_atoms = t.n_atoms
+    
+    u = mda.Universe(top_, traj_)
+    n_atoms = len(u.atoms)
+    n_frames = len(u.trajectory)
 
     print(f'\nTrajectory stats : #_Frames = {n_frames}\t#_Atoms = {n_atoms}')
     print('_'*70,'\n')
@@ -63,7 +64,7 @@ batch_size (int) : samples per batch to load [Default=128]
     if memmap:
         centered_xyz = np.memmap('temp_traj.dat', dtype=np.float32, mode='w+', shape=(int(n_frames/stride), n_atoms, 3))
     else:
-        centered_xyz = np.empty(dtype=np.float32, shape=(int(n_frames/stride), n_atoms, 3))
+        centered_xyz = np.empty(dtype=np.float32, shape=(int(n_frames/stride)+1, n_atoms, 3))
       
     start_frame = 0
     for n, chunk in tqdm(enumerate(md.iterload(traj_, top=top_, chunk=chunk, stride=stride)), total=int(n_frames/(chunk*stride)), bar_format='Loading trajectory: {percentage:6.2f}% |{bar}|', ncols=50):
