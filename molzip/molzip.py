@@ -104,34 +104,6 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     print('\n')
     
     torch.save(model, out+fname+'model.pt')
-
-    # # Compress --------------
-    # encoder = model.model.encoder.to(device)
-    # traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=False, drop_last=False, num_workers=4) 
-
-    # z = []
-    # with torch.no_grad():
-    #     encoder.eval()
-    #     for batch in tqdm(traj_dl, desc="Compressing "):
-    #         batch = batch.to(device=device, dtype=torch.float32)
-    #         z.append(encoder(batch))
-    
-    # pickle.dump(z, open(out+fname+"compressed.pkl", 'wb'))
-    # print('_'*70+'\n')
-
-    # # Print stats -----------
-    # org_size = os.path.getsize(traj)
-    # comp_size = os.path.getsize(out+fname+"compressed.pkl")
-    # compression = 100*(1 - comp_size/org_size)
-    
-    # template = "{string:<20} :{value:15.3f}"
-    # print(template.format(string='Original Size [MB]', value=round(org_size*1e-6,3)))
-    # print(template.format(string='Compressed Size [MB]', value=round(comp_size*1e-6,3)))
-    # print(template.format(string='Compression %', value=round(compression,3)))
-    # print('---')
-    # # print(template.format(string='RMSD [\u212B]', value=round(np.mean(rmsd),3)))
-    # # print(template.format(string='R\u00b2', value=round(r2,3))) 
-    # # print(template.format(string='MSE (nm\u00b2)', value=round(mean_squared_error,3)))
     
     # Clean -----------------
     if os.path.exists('lightning_logs'):
@@ -196,11 +168,6 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     else:
         if not out.endswith('/'):
             out += '/'
-
-    # if os.path.exists(out+fname+'compressed'):
-    #     shutil.rmtree(out+fname+'compressed')
-    # os.mkdir(out+fname+'compressed')
-    # out = out+fname+'compressed\\' if platform.system() == "Windows" else out+fname+'compressed/'
 
     # Read trajectory -------
     traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
