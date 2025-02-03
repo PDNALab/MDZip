@@ -22,7 +22,7 @@ set_seed()
 #                  T R A I N                  
 # -------------------------------------------- 
 
-def train(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, w:float=1.0, memmap:bool=False):
+def train(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, w:float=1.0, a:float=1.0, memmap:bool=False):
     r'''
 compressing trajectory
 ----------------------
@@ -35,6 +35,7 @@ epochs (int) : Number of epochs to train AE model [Default=100]
 batchSize (int) : Batch size to train AE model [Default=128]
 lat (int) : Latent vector length [Default=20]
 w (float) : Non-negative weight for loss function [Default=1.0]
+a (float) : Non-negative weight for loss function [Default=1.0]
 memmap (bool) : Use memory-map to read trajectory [Default=False]
         '''
     
@@ -81,7 +82,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 
     # Train model -----------
     model = AE(n_atoms=n_atoms, latent_dim=lat)
-    model = LightAE(model=model, lr=1e-4, w=w, loss_path=out+fname+'losses.dat')
+    model = LightAE(model=model, lr=1e-4, w=w, a=a, loss_path=out+fname+'losses.dat')
 
     print('Training Deep Convolutional AutoEncoder model')
     
@@ -112,6 +113,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         os.remove('temp_traj.dat')
 
     print('\n')
+ 
  
 # -------------------------------------------- 
 #        C O N T I N U E  T R A I N                  
@@ -332,3 +334,4 @@ out (str) : Output trajectory file path with name. Use extention to define file 
                 f.write(np_traj_frame)
     
     print('\n')
+    
