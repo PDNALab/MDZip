@@ -126,112 +126,176 @@ heavy_atoms (bool) : Caculate the fit-metrics only for heavy atoms if True, else
         rmsd = np.array(rmsd_)*10 # convert to angstroms
     return rmsd, r2_score(arr[:,0], arr[:,1]), mean_squared_error(arr[:,0], arr[:,1])
     
-def cluster_trajectory(trajectory, n_clusters, n_components=2, plot=False):
-    r'''
-Perform PCA on an MD trajectory and cluster the principal components.
---------------------------------------------------------------------
-trajectory (np.ndarray): MD trajectory data
-n_components (int) : Number of principal components to keep.
-n_clusters: (int) : Number of clusters to form.
-plot (bool) : Whether to plot the PCA result with clustering.
+# def cluster_trajectory(trajectory, n_clusters, n_components=2, plot=False):
+#     r'''
+# Perform PCA on an MD trajectory and cluster the principal components.
+# --------------------------------------------------------------------
+# trajectory (np.ndarray): MD trajectory data
+# n_components (int) : Number of principal components to keep.
+# n_clusters: (int) : Number of clusters to form.
+# plot (bool) : Whether to plot the PCA result with clustering.
 
-Returns: (dict)
-A dictionary where keys are cluster indices and values are lists of frame numbers.
-    '''
+# Returns: (dict)
+# A dictionary where keys are cluster indices and values are lists of frame numbers.
+#     '''
     
-    num_frames, num_atoms, dim = trajectory.shape
-    assert dim == 3, "The dimensions of each atom's coordinates should be 3."
+#     num_frames, num_atoms, dim = trajectory.shape
+#     assert dim == 3, "The dimensions of each atom's coordinates should be 3."
     
-    X = trajectory.reshape(num_frames, num_atoms * dim)
+#     X = trajectory.reshape(num_frames, num_atoms * dim)
 
-    pca = PCA(n_components=n_components)
-    principal_components = pca.fit_transform(X)
+#     pca = PCA(n_components=n_components)
+#     principal_components = pca.fit_transform(X)
 
-    kmeans = KMeans(n_clusters=n_clusters)
-    kmeans.fit(principal_components)
-    labels = kmeans.labels_
+#     kmeans = KMeans(n_clusters=n_clusters)
+#     kmeans.fit(principal_components)
+#     labels = kmeans.labels_
 
-    clusters = {}
-    for frame, cluster in enumerate(labels):
-        if cluster not in clusters:
-            clusters[cluster] = []
-        clusters[cluster].append(frame)
+#     clusters = {}
+#     for frame, cluster in enumerate(labels):
+#         if cluster not in clusters:
+#             clusters[cluster] = []
+#         clusters[cluster].append(frame)
 
-    if plot and n_components >= 2:
-        plt.subplots(figsize=(5,3.5))
-        plt.scatter(principal_components[:, 0], principal_components[:, 1], c=labels, cmap='viridis', alpha=0.5, s=10)
-        plt.xlabel('PC 1', fontsize=12, family='serif')
-        plt.ylabel('PC 2', fontsize=12, family='serif')
-        plt.title('PCA', fontsize=13, family='monospace')
-        plt.show()
+#     if plot and n_components >= 2:
+#         plt.subplots(figsize=(5,3.5))
+#         plt.scatter(principal_components[:, 0], principal_components[:, 1], c=labels, cmap='viridis', alpha=0.5, s=10)
+#         plt.xlabel('PC 1', fontsize=12, family='serif')
+#         plt.ylabel('PC 2', fontsize=12, family='serif')
+#         plt.title('PCA', fontsize=13, family='monospace')
+#         plt.show()
 
-    return clusters
+#     return clusters
 
 
-def elbow_method(trajectory, n_components=2, max_clusters=10, plot=False):
-    r'''
-Determining the optimal number of clusters with Elbow method
-------------------------------------------------------------
-trajectory (np.ndarray): MD trajectory data
-n_components (int) : Number of principal components to keep.
-max_clusters (int) : Maximum number of clusters
-plot (bool) : Whether to plot the PCA result with clustering.
+# def elbow_method(trajectory, n_components=2, max_clusters=10, plot=False):
+#     r'''
+# Determining the optimal number of clusters with Elbow method
+# ------------------------------------------------------------
+# trajectory (np.ndarray): MD trajectory data
+# n_components (int) : Number of principal components to keep.
+# max_clusters (int) : Maximum number of clusters
+# plot (bool) : Whether to plot the PCA result with clustering.
 
-Returns: (np.array)
-np.array with shape(max_clusters,2) -- number of clusters vs distrosion
-    '''
-    num_frames, num_atoms, dim = trajectory.shape
-    X = trajectory.reshape(num_frames, num_atoms * dim)
+# Returns: (np.array)
+# np.array with shape(max_clusters,2) -- number of clusters vs distrosion
+#     '''
+#     num_frames, num_atoms, dim = trajectory.shape
+#     X = trajectory.reshape(num_frames, num_atoms * dim)
     
-    pca = PCA(n_components=n_components)
-    principal_components = pca.fit_transform(X)
+#     pca = PCA(n_components=n_components)
+#     principal_components = pca.fit_transform(X)
     
-    distortions = []
-    for k in range(1, max_clusters + 1):
-        kmeans = KMeans(n_clusters=k)
-        kmeans.fit(principal_components)
-        distortions.append(kmeans.inertia_)
+#     distortions = []
+#     for k in range(1, max_clusters + 1):
+#         kmeans = KMeans(n_clusters=k)
+#         kmeans.fit(principal_components)
+#         distortions.append(kmeans.inertia_)
     
-    if plot:
-        plt.subplots(figsize=(5,3.5))
-        plt.plot(range(1, max_clusters + 1), distortions)
-        plt.xlabel('Number of clusters', fontsize=12, family='serif')
-        plt.ylabel('Distortion', fontsize=12, family='serif')
-        plt.show()
+#     if plot:
+#         plt.subplots(figsize=(5,3.5))
+#         plt.plot(range(1, max_clusters + 1), distortions)
+#         plt.xlabel('Number of clusters', fontsize=12, family='serif')
+#         plt.ylabel('Distortion', fontsize=12, family='serif')
+#         plt.show()
         
     
-    return np.array([range(1, max_clusters + 1), distortions]).T
+#     return np.array([range(1, max_clusters + 1), distortions]).T
 
-def silhouette_analysis(trajectory, n_components=2, max_clusters=10, plot=False):
-    r'''
-Determining the optimal number of clusters with Silhouette_analysis
--------------------------------------------------------------------
-trajectory (np.ndarray): MD trajectory data
-n_components (int) : Number of principal components to keep.
-max_clusters (int) : Maximum number of clusters
-plot (bool) : Whether to plot the PCA result with clustering.
+# def silhouette_analysis(trajectory, n_components=2, max_clusters=10, plot=False):
+#     r'''
+# Determining the optimal number of clusters with Silhouette_analysis
+# -------------------------------------------------------------------
+# trajectory (np.ndarray): MD trajectory data
+# n_components (int) : Number of principal components to keep.
+# max_clusters (int) : Maximum number of clusters
+# plot (bool) : Whether to plot the PCA result with clustering.
 
-Returns: (np.array)
-np.array with shape(max_clusters-1,2) -- number of clusters vs distrosion
-    '''
-    num_frames, num_atoms, dim = trajectory.shape
-    X = trajectory.reshape(num_frames, num_atoms * dim)
+# Returns: (np.array)
+# np.array with shape(max_clusters-1,2) -- number of clusters vs distrosion
+#     '''
+#     num_frames, num_atoms, dim = trajectory.shape
+#     X = trajectory.reshape(num_frames, num_atoms * dim)
     
-    pca = PCA(n_components=n_components)
-    principal_components = pca.fit_transform(X)
+#     pca = PCA(n_components=n_components)
+#     principal_components = pca.fit_transform(X)
     
-    silhouette_scores = []
-    for k in range(2, max_clusters + 1):
-        kmeans = KMeans(n_clusters=k)
-        cluster_labels = kmeans.fit_predict(principal_components)
-        silhouette_avg = silhouette_score(principal_components, cluster_labels)
-        silhouette_scores.append(silhouette_avg)
+#     silhouette_scores = []
+#     for k in range(2, max_clusters + 1):
+#         kmeans = KMeans(n_clusters=k)
+#         cluster_labels = kmeans.fit_predict(principal_components)
+#         silhouette_avg = silhouette_score(principal_components, cluster_labels)
+#         silhouette_scores.append(silhouette_avg)
     
-    if plot:
-        plt.subplots(figsize=(5,3.5))
-        plt.plot(range(2, max_clusters + 1), silhouette_scores)
-        plt.xlabel('Number of clusters', fontsize=12, family='serif')
-        plt.ylabel('Average Silhouette Score', fontsize=12, family='serif')
-        plt.show()
+#     if plot:
+#         plt.subplots(figsize=(5,3.5))
+#         plt.plot(range(2, max_clusters + 1), silhouette_scores)
+#         plt.xlabel('Number of clusters', fontsize=12, family='serif')
+#         plt.ylabel('Average Silhouette Score', fontsize=12, family='serif')
+#         plt.show()
         
-    return np.array([range(2, max_clusters + 1), silhouette_scores]).T
+#     return np.array([range(2, max_clusters + 1), silhouette_scores]).T
+
+
+class TrajectoryAnalysis:
+    def __init__(self, trajectory):
+        self.trajectory = trajectory
+        self.n_frames, self.n_atoms, self.dim = self.trajectory.shape
+        assert self.dim == 3, "The dimensions of each atom's coordinates should be 3."
+        self.X = self.trajectory.reshape(self.n_frames, self.n_atoms * self.dim)
+        self.pca = PCA(n_components=self.kaiser_criterion(), random_state=42)
+        self.principal_components = self.pca.fit_transform(self.X)
+
+    def clusters(self, n_clusters):
+        kmeans = KMeans(n_clusters=n_clusters)
+        kmeans.fit(self.principal_components)
+        labels = kmeans.labels_
+
+        clusters = {}
+        for frame, cluster in enumerate(labels):
+            if cluster not in clusters:
+                clusters[cluster] = []
+            clusters[cluster].append(frame)
+
+        return clusters
+
+    def elbow_method(self, max_clusters=10):
+        distortions = []
+        for k in range(1, max_clusters + 1):
+            kmeans = KMeans(n_clusters=k)
+            kmeans.fit(self.principal_components)
+            distortions.append(kmeans.inertia_)
+
+        return np.array([range(1, max_clusters + 1), distortions]).T
+
+    def silhouette_analysis(self, max_clusters=10):
+        silhouette_scores = []
+        for k in range(2, max_clusters + 1):
+            kmeans = KMeans(n_clusters=k)
+            cluster_labels = kmeans.fit_predict(self.principal_components)
+            silhouette_avg = silhouette_score(self.principal_components, cluster_labels)
+            silhouette_scores.append(silhouette_avg)
+
+        return np.array([range(2, max_clusters + 1), silhouette_scores]).T
+
+    def kaiser_criterion(self):
+        pca_ = PCA(n_components=3*self.n_atoms-6, random_state=42)
+        pca_.fit(self.X)
+        eigenvalues = pca_.explained_variance_
+        n_components = np.sum(eigenvalues > 1)
+        return n_components
+
+    def silhouette_plot(self, max_clusters=10):
+        fig, ax = plt.subplots(figsize=(5,3.5))
+        s = self.silhouette_analysis(max_clusters=max_clusters).T
+        e = self.elbow_method(max_clusters=max_clusters).T[:,1:]
+        ax.scatter(s[0],s[1], s=42, color='dodgerblue')
+        ax.plot(s[0],s[1], color='dodgerblue')
+        ax.set_ylabel('Average Silhouette Score', family='serif', fontsize=12)
+        ax.set_xlabel('Number of clusters', family='serif', fontsize=12)
+        ax2 = ax.twinx()
+        ax2.scatter(e[0],e[1], s=42, color='pink')
+        ax2.plot(e[0],e[1], color='pink')
+        ax2.set_ylabel('Distortions', family='serif', fontsize=12)
+        plt.show()
+# def cluster_test(trajectory, )
