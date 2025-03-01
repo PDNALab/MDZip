@@ -184,12 +184,15 @@ trajectory (np.array) : Loaded trajectory in xyz format
         fig, ax = plt.subplots(figsize=(5,3.5))
         s = self.silhouette_analysis(max_clusters=max_clusters).T
         e = self.elbow_method(max_clusters=max_clusters).T[:,1:]
-        ax.scatter(s[0],s[1], s=42, color='dodgerblue')
+        ax.scatter(s[0],s[1], s=42, color='dodgerblue', label='Silhouette')
         ax.plot(s[0],s[1], color='dodgerblue')
         ax.set_ylabel('Average Silhouette Score', family='serif', fontsize=12)
         ax.set_xlabel('Number of clusters', family='serif', fontsize=12)
         ax2 = ax.twinx()
-        ax2.scatter(e[0],e[1], s=42, color='pink')
+        ax2.scatter(e[0],e[1], s=42, color='pink', label='Elbow')
         ax2.plot(e[0],e[1], color='pink')
         ax2.set_ylabel('Distortions', family='serif', fontsize=12)
+        custom_lines = [plt.Line2D([0], [0], marker='o', color='dodgerblue', label='Silhouette'),
+                plt.Line2D([0], [0], marker='o', color='pink', label='Elbow')]
+        ax.legend(handles=custom_lines, loc='upper right')
         plt.show()
