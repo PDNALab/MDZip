@@ -15,39 +15,35 @@ Loss function
     def dist_mat(self, coords):
         return(torch.cdist(coords,coords))
     
-    def compute_angles(self, tensor):
-        num_atoms = tensor.shape[2]
-        all_indices = torch.arange(num_atoms, device=tensor.device)
+    # def compute_angles(self, tensor):
+    #     num_atoms = tensor.shape[2]
+    #     all_indices = torch.arange(num_atoms, device=tensor.device)
         
-        # Generate unique triplets of indices
-        triplets = list(itertools.combinations(all_indices, 3))
-        triplets = torch.tensor(triplets, dtype=torch.long, device=tensor.device)
+    #     triplets = list(itertools.combinations(all_indices, 3))
+    #     triplets = torch.tensor(triplets, dtype=torch.long, device=tensor.device)
 
-        # Get indices for each triplet
-        i = triplets[:, 0]
-        j = triplets[:, 1]
-        k = triplets[:, 2]
+    #     i = triplets[:, 0]
+    #     j = triplets[:, 1]
+    #     k = triplets[:, 2]
         
-        a = tensor[:, 0, i, :]
-        b = tensor[:, 0, j, :]
-        c = tensor[:, 0, k, :]
+    #     a = tensor[:, 0, i, :]
+    #     b = tensor[:, 0, j, :]
+    #     c = tensor[:, 0, k, :]
 
-        # Efficient vector calculations
-        ba = b - a
-        bc = b - c
+    #     ba = b - a
+    #     bc = b - c
         
-        ba_norm = ba.norm(dim=-1, keepdim=True)
-        bc_norm = bc.norm(dim=-1, keepdim=True)
+    #     ba_norm = ba.norm(dim=-1, keepdim=True)
+    #     bc_norm = bc.norm(dim=-1, keepdim=True)
 
-        # Normalize vectors
-        ba_normalized = ba / ba_norm
-        bc_normalized = bc / bc_norm
+    #     # Normalize vectors
+    #     ba_normalized = ba / ba_norm
+    #     bc_normalized = bc / bc_norm
         
-        # Calculate cosines of angles
-        cos_angles = (ba_normalized * bc_normalized).sum(dim=-1)
-        angles = torch.acos(cos_angles.clamp(-1.0, 1.0))
+    #     cos_angles = (ba_normalized * bc_normalized).sum(dim=-1)
+    #     angles = torch.acos(cos_angles.clamp(-1.0, 1.0))
         
-        return angles
+    #     return angles
 
     def minMax_scale(self, tensor1, tensor2):
         stacked_tensor = torch.stack([tensor1, tensor2])
@@ -66,12 +62,12 @@ Loss function
             rmse_d = torch.sqrt(torch.mean((dist1 - dist2) ** 2))
         else:
             rmse_d = 0.0
-        if a > 1e-4:
-            ang1, ang2 = self.minMax_scale(self.compute_angles(recon), self.compute_angles(x))
-            rmse_a = torch.sqrt(torch.mean((ang1 - ang2) ** 2))
-        else:
-            rmse_a = 0.0
-        return rmse + w*(rmse_d) + a*(rmse_a)
+        # if a > 1e-4:
+        #     ang1, ang2 = self.minMax_scale(self.compute_angles(recon), self.compute_angles(x))
+        #     rmse_a = torch.sqrt(torch.mean((ang1 - ang2) ** 2))
+        # else:
+        #     rmse_a = 0.0
+        return rmse + w*(rmse_d) #+ a*(rmse_a)
 
 class AE(nn.Module):
     def __init__(self, n_atoms:int, latent_dim:int=20, n_channels:int=4096):
