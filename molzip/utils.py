@@ -196,3 +196,31 @@ trajectory (np.array) : Loaded trajectory in xyz format
                 plt.Line2D([0], [0], marker='o', color='pink', label='Elbow')]
         ax.legend(handles=custom_lines, loc='upper right')
         plt.show()
+
+def get_cluster(cluster):
+    """
+    Assigns cluster numbers to values in a dictionary of lists, where the cluster number
+    corresponds to the key of the dictionary.
+    
+    Args:
+        cluster (dict): A dictionary where the values are lists
+    
+    Returns:
+        list: A list of cluster assignments for each value in ascending order from 0 to the maximum value.
+    """
+    all_values = []
+    
+    for key, values in cluster.items():
+        all_values.extend(values)
+    all_values.sort()
+    
+    cluster_assignments = []
+    
+    current_cluster = 0
+    for value in all_values:
+        for key, values in cluster.items():
+            if value in values:
+                cluster_assignments.append(key)
+                break
+    
+    return cluster_assignments

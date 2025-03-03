@@ -22,7 +22,7 @@ set_seed()
 #                  T R A I N                  
 # -------------------------------------------- 
 
-def train(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, w:float=1.0, a:float=1.0, memmap:bool=False):
+def train(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, w:float=1.0, a:float=0.0, memmap:bool=False, cluster:dict=None):
     r'''
 compressing trajectory
 ----------------------
@@ -37,6 +37,7 @@ lat (int) : Latent vector length [Default=20]
 w (float) : Non-negative weight for loss function [Default=1.0]
 a (float) : Non-negative weight for loss function [Default=1.0]
 memmap (bool) : Use memory-map to read trajectory [Default=False]
+cluster (dict) : Dictionary of clusters based on 3D coordinates [Default=None] # get best number of clusters using silhouette score
         '''
     
     pathExists(traj)
@@ -77,57 +78,73 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     # Read trajectory -------
     traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
     n_atoms = traj_.shape[2]
-    traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=True, num_workers=4)
+    
+    if cluster!=None:
+        traj_dl = [DataLoader(traj_[cluster[c],:,:,:], batch_size=batchSize, shuffle=True, drop_last=False, num_workers=4) for c in range(len(cluster))]
+    else:
+        cluster = {0:np.arange(traj_.shape[0]).tolist()}
+        traj_dl = [DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=False, num_workers=4)]
+        
     print('_'*70+'\n')
 
+    pickle.dump(cluster, open(out+fname+"clusters.pkl", 'wb'))
+
+    models = {}
+    checkpoint_dict = {}
+    for c in range(len(traj_dl)):
     # Train model -----------
-    model = AE(n_atoms=n_atoms, latent_dim=lat)
-    model = LightAE(model=model, lr=1e-4, w=w, a=a, loss_path=out+fname+'losses.dat')
+        model = AE(n_atoms=n_atoms, latent_dim=lat)
+        model = LightAE(model=model, lr=1e-4, w=w, a=a, loss_path=out+fname+f'losses_{c}.dat')
 
-    print('Training Deep Convolutional AutoEncoder model')
+        print(f'Training Deep Convolutional AutoEncoder model {c}')
     
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=out,
-        filename=f'{fname}checkpoint',
-        save_top_k=1  # Save the best checkpoint
-        )
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=out,
+            filename=f'{fname}checkpoint_{c}',
+            save_top_k=1  # Save the best checkpoint
+            )
     
-    trainer = pl.Trainer(
-        max_epochs=epochs,
-        accelerator=accelerator,
-        devices=n_devices,
-        callbacks=[checkpoint_callback]
-        )
+        trainer = pl.Trainer(
+            max_epochs=epochs,
+            accelerator=accelerator,
+            devices=n_devices,
+            callbacks=[checkpoint_callback]
+            )
     
-    trainer.fit(model, traj_dl)
+        trainer.fit(model, traj_dl[c])
+        models[c] = model
+        # rmsd, r2, mean_squared_error = fitMetrics(model=model, dl=traj_dl, top=top)
 
-    # rmsd, r2, mean_squared_error = fitMetrics(model=model, dl=traj_dl, top=top)
-    print('\n')
-    
-    torch.save(model, out+fname+'model.pt')
+        checkpoint = os.path.join(out, f'{fname}checkpoint_{c}.ckpt')
+        checkpoint_dict[c] = checkpoint
+        
+        print('\n')
     
     # Clean -----------------
-    if os.path.exists('lightning_logs'):
-        shutil.rmtree('lightning_logs')
-    if os.path.exists('temp_traj.dat'):
-        os.remove('temp_traj.dat')
+        if os.path.exists('lightning_logs'):
+            shutil.rmtree('lightning_logs')
+        if os.path.exists('temp_traj.dat'):
+            os.remove('temp_traj.dat')
 
-    print('\n')
- 
+        print('\n')
+
+    torch.save(models, out+fname+'model.pt')
+    torch.save(checkpoint_dict, out+fname+f'checkpoints.pt')
  
 # -------------------------------------------- 
 #        C O N T I N U E  T R A I N                  
 # -------------------------------------------- 
 
-def cont_train(traj:str, top:str,  model:str, checkpoint:str, stride:int=1, epochs:int=100, batchSize:int=128, lat:int=20, w:float=1.0, memmap:bool=False):
+def cont_train(traj:str, top:str,  model:str, checkpoint:str, cluster:str, stride:int=1, epochs:int=100, batchSize:int=128, lat:int=20, w:float=1.0, memmap:bool=False):
     r'''
 compressing trajectory
 ----------------------
 traj (str) : Path to the trajectory file
 top (str) : Path to the topology file
+cluster (str) : Path to pre-saved clusters.pkl file
 stride (int) : Read every strid-th frame [Default=1]
 model (str)  = Path to previously trained model file
-checkpoint (str) = Path to previously check point file
+checkpoint (str) = Path to check point file
 out (str) : Path to save compressed files [Default=current directory]
 fname (str) : Prefix for all generated files [Default=None]
 epochs (int) : Number of epochs to train AE model [Default=100]
@@ -158,69 +175,76 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         print('CUDA is not available')
 
     # Load model
-    model = torch.load(model).to(device)
-    
-    out = os.path.dirname(model.loss_path)
-    fname = os.path.basename(model.loss_path).split('_')[0] + '_'
-    
-    
-    if platform.system() == "Windows":
-        if not out.endswith('\\'):
-            out += '\\'
-    else:
-        if not out.endswith('/'):
-            out += '/'
+    models = torch.load(model)
+    checkpoint_dict = torch.load(checkpoint)
+    clusters = pickle.load(open(cluster, "rb"))
 
     # Read trajectory -------
     traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
-    traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=True, num_workers=4)
-    print('_'*70+'\n')
+
+    for c in range(len(models)):
+        model_ = models[c].to(device)
+        out = os.path.dirname(model_.loss_path)
+        fname = os.path.basename(model_.loss_path).split('_')[0] + '_'
+
+        traj_dl = DataLoader(traj_[clusters[c],:,:,:], batch_size=batchSize, shuffle=True, drop_last=False, num_workers=4)
+    
+        print('_'*70+'\n')
 
     # Train model -----------
-    model.epoch_losses = list(np.loadtxt(model.loss_path, usecols=1))
+        model_.epoch_losses = list(np.loadtxt(model_.loss_path, usecols=1))
     
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=out,
-        filename=f'{fname}checkpoint',
-        save_top_k=1  # Save the best checkpoint
-        )
-    
-    trainer = pl.Trainer(
-        max_epochs=len(model.epoch_losses)+epochs,
-        accelerator=accelerator,
-        devices=n_devices,
-        callbacks=[checkpoint_callback]
-        )
-    
-    trainer.fit(model, traj_dl, ckpt_path=checkpoint)
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=out,
+            filename=f'{fname}checkpoint{c}',
+            save_top_k=1  # Save the best checkpoint
+            )
+        
+        trainer = pl.Trainer(
+            max_epochs=len(model_.epoch_losses)+epochs,
+            accelerator=accelerator,
+            devices=n_devices,
+            callbacks=[checkpoint_callback]
+            )
+        
+        trainer.fit(model_, traj_dl, ckpt_path=checkpoint_dict[c])
+        models[c] = model_
+
+        checkpoint = torch.load(os.path.join(out, f'{fname}checkpoint_{c}.ckpt'))
+        checkpoint_dict[c] = checkpoint
     
     # Clean -----------------
-    if os.path.exists('lightning_logs'):
-        shutil.rmtree('lightning_logs')
-    if os.path.exists('temp_traj.dat'):
-        os.remove('temp_traj.dat')
+        if os.path.exists('lightning_logs'):
+            shutil.rmtree('lightning_logs')
+        if os.path.exists('temp_traj.dat'):
+            os.remove('temp_traj.dat')
 
-    print('\n')
+        print('\n')
 
+    torch.save(models, model)
+    torch.save(checkpoint_dict, os.path.join(out, f'{fname}checkpoints.pt'))
+    
 
 # -------------------------------------------- 
 #             C O M P R E S S                  
 # -------------------------------------------- 
-def compress(traj:str, top:str, model:str, stride:int=1, out:str=os.getcwd(), fname:str=None, batchSize:int=128, memmap:bool=False):
+def compress(traj:str, top:str, model:str, cluster:str, stride:int=1, out:str=os.getcwd(), fname:str=None, memmap:bool=False):
     r'''
 compressing trajectory
 ----------------------
 traj (str) : Path to the trajectory file
 top (str) : Path to the topology file
+cluster (str) : Path to pre-saved clusters.pkl file
 model (str)  = Path to previously trained model file
 stride (int) : Read every strid-th frame [Default=1]
 out (str) : Path to save compressed files [Default=current directory]
 fname (str) : Prefix for all generated files [Default=None]
-batchSize (int) : Batch size to train AE model [Default=128]
 memmap (bool) : Use memory-map to read trajectory [Default=False]
         '''
+    
     pathExists(traj)
     pathExists(top)
+    
     # Define device ---------
     if torch.cuda.is_available():
         device = torch.device('cuda')
@@ -235,14 +259,12 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         device = torch.device('cpu')
         n_devices = 1
         print('CUDA is not available')
-    
-    model = torch.load(model).to(device)
-    
+        
     if fname != None:
         fname += '_'
     else:
-        fname = os.path.basename(model.loss_path).split('_')[0] + '_'
-    
+        fname = os.path.basename(models[0].loss_path).split('_')[0] + '_'
+        
     if platform.system() == "Windows":
         if not out.endswith('\\'):
             out += '\\'
@@ -250,20 +272,29 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         if not out.endswith('/'):
             out += '/'
 
-    # Read trajectory -------
-    traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
-    traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=True, num_workers=4)
     print('_'*70+'\n')
     
-    encoder = model.model.encoder.to(device)
-    traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=False, drop_last=False, num_workers=4) 
+    # Load model
+    models = torch.load(model)
+    clusters = pickle.load(open(cluster, "rb"))
 
+    # Read trajectory -------
+    traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
+    traj_dl = DataLoader(traj_, batch_size=1, shuffle=False, drop_last=False, num_workers=4) 
+
+    for c in range(len(models)):
+        model_ = models[c]
+        encoder = model_.model.encoder.to(device)
+        models[c] = encoder
+
+    c_index = get_cluster(clusters)
     z = []
     with torch.no_grad():
-        encoder.eval()
-        for batch in tqdm(traj_dl, desc="Compressing "):
+        for encoder in models.values():
+            encoder.eval()
+        for batch, c in tqdm(zip(traj_dl, c_index), desc="Compressing "):
             batch = batch.to(device=device, dtype=torch.float32)
-            z.append(encoder(batch))
+            z.append(models[c](batch))
     
     pickle.dump(z, open(out+fname+"compressed.pkl", 'wb'))
     print('_'*70+'\n')
@@ -284,7 +315,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 #            D E C O M P R E S S                  
 # -------------------------------------------- 
 
-def decompress(top:str, model:str, compressed:str, out:str):
+def decompress(top:str, model:str, compressed:str, out:str, cluster:str):
     r'''
 decompress compressed-trajectory
 --------------------------------
@@ -292,6 +323,7 @@ top (str) : Path to the topology file (parm7|pdb)
 model (str) : Path to the saved model file
 compressed (str) : Path to the compressed trajectory file
 out (str) : Output trajectory file path with name. Use extention to define file type (*.nc|*.xtc)
+cluster (str) : Path to pre-saved clusters.pkl file
     '''
     pathExists(top)
     pathExists(model)
@@ -312,13 +344,23 @@ out (str) : Output trajectory file path with name. Use extention to define file 
     else:
         device = torch.device('cpu')
         print('Device name: CPU')
+
+    # Load model
+    models = torch.load(model)
+    clusters = pickle.load(open(cluster, "rb"))
+    c_index = get_cluster(clusters)
     
     # Decompress ------------
-    decoder = torch.load(model).to(device).model.decoder
+    for c in range(len(models)):
+        model_ = models[c]
+        decoder = model_.model.decoder.to(device)
+        models[c] = decoder
+        
     compressed = torch.concatenate(pickle.load(open(compressed, 'rb')))
     
     with torch.no_grad():
-        decoder.eval()
+        for decoder in models.values():
+            decoder.eval()
     
         if out.endswith('.nc'):
             traj_file = md.formats.netcdf.NetCDFTrajectoryFile(out, 'w')
@@ -329,7 +371,7 @@ out (str) : Output trajectory file path with name. Use extention to define file 
     
         with traj_file as f:
             for i in tqdm(range(len(compressed)), desc='Compressing '):
-                np_traj_frame = decoder(comp[i].reshape(1, -1)).detach().cpu().numpy()
+                np_traj_frame = models[c_index[i]](compressed[i].reshape(1, -1)).detach().cpu().numpy()
                 np_traj_frame = np_traj_frame.reshape(-1, np_traj_frame.shape[2], 3)
                 f.write(np_traj_frame)
     
