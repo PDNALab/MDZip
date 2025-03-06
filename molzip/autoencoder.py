@@ -11,39 +11,6 @@ Loss function
     '''
     def __init__(self):
         super(Loss, self).__init__()
-        
-    def dist_mat(self, coords):
-        return(torch.cdist(coords,coords))
-    
-    # def compute_angles(self, tensor):
-    #     num_atoms = tensor.shape[2]
-    #     all_indices = torch.arange(num_atoms, device=tensor.device)
-        
-    #     triplets = list(itertools.combinations(all_indices, 3))
-    #     triplets = torch.tensor(triplets, dtype=torch.long, device=tensor.device)
-
-    #     i = triplets[:, 0]
-    #     j = triplets[:, 1]
-    #     k = triplets[:, 2]
-        
-    #     a = tensor[:, 0, i, :]
-    #     b = tensor[:, 0, j, :]
-    #     c = tensor[:, 0, k, :]
-
-    #     ba = b - a
-    #     bc = b - c
-        
-    #     ba_norm = ba.norm(dim=-1, keepdim=True)
-    #     bc_norm = bc.norm(dim=-1, keepdim=True)
-
-    #     # Normalize vectors
-    #     ba_normalized = ba / ba_norm
-    #     bc_normalized = bc / bc_norm
-        
-    #     cos_angles = (ba_normalized * bc_normalized).sum(dim=-1)
-    #     angles = torch.acos(cos_angles.clamp(-1.0, 1.0))
-        
-    #     return angles
 
     def minMax_scale(self, tensor1, tensor2):
         stacked_tensor = torch.stack([tensor1, tensor2])
@@ -53,21 +20,11 @@ Loss function
         tensor2 =  (tensor2 - min_val) / (max_val - min_val)
         return tensor1, tensor2
         
-    def forward(self, recon, x, w:float=1.0, a:float=1.0):
+    def forward(self, recon, x):
         torch.cuda.empty_cache()  # Clear the cache before computations
         coord1, coord2 = self.minMax_scale(recon, x)
         rmse = torch.sqrt(torch.mean((coord1 - coord2) ** 2))
-        if w > 1e-4:
-            dist1, dist2 = self.minMax_scale(self.dist_mat(recon), self.dist_mat(x))
-            rmse_d = torch.sqrt(torch.mean((dist1 - dist2) ** 2))
-        else:
-            rmse_d = 0.0
-        # if a > 1e-4:
-        #     ang1, ang2 = self.minMax_scale(self.compute_angles(recon), self.compute_angles(x))
-        #     rmse_a = torch.sqrt(torch.mean((ang1 - ang2) ** 2))
-        # else:
-        #     rmse_a = 0.0
-        return rmse + w*(rmse_d) #+ a*(rmse_a)
+        return rmse 
 
 class AE(nn.Module):
     def __init__(self, n_atoms:int, latent_dim:int=20, n_channels:int=4096):
@@ -138,7 +95,7 @@ latent_dim (int) : compressed latent vector length [Default=20]
 
 
 class LightAE(pl.LightningModule):
-    def __init__(self, model, lr=1e-4, idx=None, w:float=1.0, a:float=1.0, loss_path:str=os.getcwd()+"losses.dat", epoch_losses=None):
+    def __init__(self, model, lr=1e-4, idx=None, loss_path:str=os.getcwd()+"losses.dat", epoch_losses=None):
         r'''
 pytorch-Lightning AutoEncoder
 -----------------------------
@@ -151,8 +108,6 @@ loss_path (str) : File path to save losses file [Default=<currunt dir>/losses.da
         '''
         super().__init__()
         self.model = model
-        self.w = w
-        self.a = a
         self.loss_fn = Loss()
         self.optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
         self.idx = idx
@@ -165,9 +120,9 @@ loss_path (str) : File path to save losses file [Default=<currunt dir>/losses.da
 
     def _calculate_loss(self, x, recon, idx):
         if idx is None:
-            return self.loss_fn(recon, x, w=self.w, a=self.a)
+            return self.loss_fn(recon, x)
         else:
-            return sum(self.loss_fn(x[:, i[0]:i[1]], recon[:, i[0]:i[1]], w=self.w, a=self.a) for i in idx)
+            return sum(self.loss_fn(x[:, i[0]:i[1]], recon[:, i[0]:i[1]]) for i in idx)
 
     def training_step(self, batch):
         x = batch.to(self.device)

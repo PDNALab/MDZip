@@ -4,6 +4,7 @@ warnings.filterwarnings("ignore")
 import torch
 from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
+from lightning.pytorch import loggers as pl_loggers
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 import pickle
 import numpy
@@ -22,7 +23,7 @@ set_seed()
 #                  T R A I N                  
 # -------------------------------------------- 
 
-def train(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, w:float=1.0, a:float=0.0, memmap:bool=False, cluster:dict=None):
+def train(traj:str, top:str, stride:int=1, out:str=os.getcwd(), fname:str='', epochs:int=100, batchSize:int=128, lat:int=20, memmap:bool=False, cluster:dict=None):
     r'''
 compressing trajectory
 ----------------------
@@ -34,8 +35,6 @@ fname (str) : Prefix for all generated files [Default=None]
 epochs (int) : Number of epochs to train AE model [Default=100]
 batchSize (int) : Batch size to train AE model [Default=128]
 lat (int) : Latent vector length [Default=20]
-w (float) : Non-negative weight for loss function [Default=1.0]
-a (float) : Non-negative weight for loss function [Default=1.0]
 memmap (bool) : Use memory-map to read trajectory [Default=False]
 cluster (dict) : Dictionary of clusters based on 3D coordinates [Default=None] # get best number of clusters using silhouette score
         '''
@@ -94,7 +93,7 @@ cluster (dict) : Dictionary of clusters based on 3D coordinates [Default=None] #
     for c in range(len(traj_dl)):
     # Train model -----------
         model = AE(n_atoms=n_atoms, latent_dim=lat)
-        model = LightAE(model=model, lr=1e-4, w=w, a=a, loss_path=out+fname+f'losses_{c}.dat')
+        model = LightAE(model=model, lr=1e-4, loss_path=out+fname+f'losses_{c}.dat')
 
         print(f'Training Deep Convolutional AutoEncoder model {c}')
     
@@ -103,14 +102,17 @@ cluster (dict) : Dictionary of clusters based on 3D coordinates [Default=None] #
             filename=f'{fname}checkpoint_{c}',
             save_top_k=1  # Save the best checkpoint
             )
-    
+        
+        tb_logger = pl_loggers.TensorBoardLogger(save_dir=fname+"logs/")
+        
         trainer = pl.Trainer(
             max_epochs=epochs,
             accelerator=accelerator,
             devices=n_devices,
-            callbacks=[checkpoint_callback]
+            callbacks=[checkpoint_callback],
+            logger=tb_logger
             )
-    
+
         trainer.fit(model, traj_dl[c])
         models[c] = model
         # rmsd, r2, mean_squared_error = fitMetrics(model=model, dl=traj_dl, top=top)
@@ -121,8 +123,8 @@ cluster (dict) : Dictionary of clusters based on 3D coordinates [Default=None] #
         print('\n')
     
     # Clean -----------------
-        if os.path.exists('lightning_logs'):
-            shutil.rmtree('lightning_logs')
+        if os.path.exists(fname+"logs/"):
+            shutil.rmtree(fname+"logs/")
         if os.path.exists('temp_traj.dat'):
             os.remove('temp_traj.dat')
 
@@ -200,11 +202,14 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
             save_top_k=1  # Save the best checkpoint
             )
         
+        tb_logger = pl_loggers.TensorBoardLogger(save_dir=fname+"logs/")
+        
         trainer = pl.Trainer(
             max_epochs=len(model_.epoch_losses)+epochs,
             accelerator=accelerator,
             devices=n_devices,
-            callbacks=[checkpoint_callback]
+            callbacks=[checkpoint_callback],
+            logger=tb_logger
             )
         
         trainer.fit(model_, traj_dl, ckpt_path=checkpoint_dict[c])
@@ -214,8 +219,8 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         checkpoint_dict[c] = checkpoint
     
     # Clean -----------------
-        if os.path.exists('lightning_logs'):
-            shutil.rmtree('lightning_logs')
+        if os.path.exists(fname+"logs/"):
+            shutil.rmtree(fname+"logs/")
         if os.path.exists('temp_traj.dat'):
             os.remove('temp_traj.dat')
 
@@ -260,6 +265,10 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         n_devices = 1
         print('CUDA is not available')
         
+    # Load model
+    models = torch.load(model)
+    clusters = pickle.load(open(cluster, "rb"))
+        
     if fname != None:
         fname += '_'
     else:
@@ -274,9 +283,6 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 
     print('_'*70+'\n')
     
-    # Load model
-    models = torch.load(model)
-    clusters = pickle.load(open(cluster, "rb"))
 
     # Read trajectory -------
     traj_ = read_traj(traj_=traj, top_=top, stride=stride, memmap=memmap)
@@ -330,12 +336,12 @@ cluster (str) : Path to pre-saved clusters.pkl file
     pathExists(compressed)
     pathExists(os.path.dirname(out))
         
-    if top.endswith('parm7'):
-        top = md.load_prmtop(top)
-    elif top.endswith('pdb'):
-        top = md.load_pdb(top).topology
-    else:
-        raise ValueError('Supported formats: .parm7, .pdb')
+    # if top.endswith('parm7'):
+    #     top = md.load_prmtop(top)
+    # elif top.endswith('pdb'):
+    #     top = md.load_pdb(top).topology
+    # else:
+    #     raise ValueError('Supported formats: .parm7, .pdb')
     
     # Define device ---------
     if torch.cuda.is_available():
@@ -370,10 +376,10 @@ cluster (str) : Path to pre-saved clusters.pkl file
             raise ValueError('Supported formats: .nc, .xtc')
     
         with traj_file as f:
-            for i in tqdm(range(len(compressed)), desc='Compressing '):
+            for i in tqdm(range(len(compressed)), desc='Decompressing '):
                 np_traj_frame = models[c_index[i]](compressed[i].reshape(1, -1)).detach().cpu().numpy()
                 np_traj_frame = np_traj_frame.reshape(-1, np_traj_frame.shape[2], 3)
                 f.write(np_traj_frame)
     
     print('\n')
-    
+    print('Decompression complete\n') 

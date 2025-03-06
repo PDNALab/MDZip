@@ -1,5 +1,6 @@
 import torch
 import mdtraj as md
+from mdtraj.formats.netcdf import NetCDFTrajectoryFile
 import numpy as np
 import random
 import os
@@ -52,10 +53,14 @@ batch_size (int) : samples per batch to load [Default=128]
     """
     if chunk < stride:
         raise ValueError('chunk should be higher than stride')
-    
-    u = mda.Universe(top_, traj_)
-    n_atoms = len(u.atoms)
-    n_frames = len(u.trajectory)
+    try:
+        u = mda.Universe(top_, traj_)
+        n_atoms = len(u.atoms)
+        n_frames = len(u.trajectory)
+    except:
+        with NetCDFTrajectoryFile(traj_, mode='r', force_overwrite=False) as u:
+            n_atoms = u.n_atoms
+            n_frames = u.n_frames
 
     print(f'\nTrajectory stats : #_Frames = {n_frames}\t#_Atoms = {n_atoms}')
     print('_'*70,'\n')
@@ -154,24 +159,35 @@ trajectory (np.array) : Loaded trajectory in xyz format
 
         return clusters
 
-    def elbow_method(self, max_clusters=10):
+    def plot_elbow_silhouette(self, max_clusters=10):
         distortions = []
+        silhouette_scores = []
+
         for k in range(1, max_clusters + 1):
             kmeans = KMeans(n_clusters=k)
             kmeans.fit(self.principal_components)
             distortions.append(kmeans.inertia_)
 
-        return np.array([range(1, max_clusters + 1), distortions]).T
+            if k > 1:
+                cluster_labels = kmeans.predict(self.principal_components)
+                silhouette_avg = silhouette_score(self.principal_components, cluster_labels)
+                silhouette_scores.append(silhouette_avg)
 
-    def silhouette_analysis(self, max_clusters=10):
-        silhouette_scores = []
-        for k in range(2, max_clusters + 1):
-            kmeans = KMeans(n_clusters=k)
-            cluster_labels = kmeans.fit_predict(self.principal_components)
-            silhouette_avg = silhouette_score(self.principal_components, cluster_labels)
-            silhouette_scores.append(silhouette_avg)
+        fig, ax = plt.subplots(figsize=(5, 3.5))
+        ax.scatter(range(1, max_clusters + 1), silhouette_scores, s=42, color='dodgerblue', label='Silhouette')
+        ax.plot(range(1, max_clusters + 1), silhouette_scores, color='dodgerblue')
+        ax.set_ylabel('Average Silhouette Score', family='serif', fontsize=12)
+        ax.set_xlabel('Number of clusters', family='serif', fontsize=12)
 
-        return np.array([range(2, max_clusters + 1), silhouette_scores]).T
+        ax2 = ax.twinx()
+        ax2.scatter(range(1, max_clusters + 1), distortions, s=42, color='pink', label='Elbow')
+        ax2.plot(range(1, max_clusters + 1), distortions, color='pink')
+        ax2.set_ylabel('Distortions', family='serif', fontsize=12)
+
+        custom_lines = [plt.Line2D([0], [0], marker='o', color='dodgerblue', label='Silhouette'),
+                        plt.Line2D([0], [0], marker='o', color='pink', label='Elbow')]
+        ax.legend(handles=custom_lines, loc='upper right')
+        plt.show()
 
     def kaiser_criterion(self):
         pca_ = PCA(n_components=3*self.n_atoms-6, random_state=42)
@@ -179,23 +195,6 @@ trajectory (np.array) : Loaded trajectory in xyz format
         eigenvalues = pca_.explained_variance_
         n_components = np.sum(eigenvalues > 1)
         return n_components
-
-    def silhouette_plot(self, max_clusters=10):
-        fig, ax = plt.subplots(figsize=(5,3.5))
-        s = self.silhouette_analysis(max_clusters=max_clusters).T
-        e = self.elbow_method(max_clusters=max_clusters).T[:,1:]
-        ax.scatter(s[0],s[1], s=42, color='dodgerblue', label='Silhouette')
-        ax.plot(s[0],s[1], color='dodgerblue')
-        ax.set_ylabel('Average Silhouette Score', family='serif', fontsize=12)
-        ax.set_xlabel('Number of clusters', family='serif', fontsize=12)
-        ax2 = ax.twinx()
-        ax2.scatter(e[0],e[1], s=42, color='pink', label='Elbow')
-        ax2.plot(e[0],e[1], color='pink')
-        ax2.set_ylabel('Distortions', family='serif', fontsize=12)
-        custom_lines = [plt.Line2D([0], [0], marker='o', color='dodgerblue', label='Silhouette'),
-                plt.Line2D([0], [0], marker='o', color='pink', label='Elbow')]
-        ax.legend(handles=custom_lines, loc='upper right')
-        plt.show()
 
 def get_cluster(cluster):
     """
