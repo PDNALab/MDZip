@@ -177,7 +177,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         print('CUDA is not available')
 
     # Load model
-    models = torch.load(model)
+    models = torch.load(model, weights_only=False)
     checkpoint_dict = torch.load(checkpoint)
     clusters = pickle.load(open(cluster, "rb"))
 
@@ -266,7 +266,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         print('CUDA is not available')
         
     # Load model
-    models = torch.load(model)
+    models = torch.load(model, weights_only=False)
     clusters = pickle.load(open(cluster, "rb"))
         
     if fname != None:
@@ -352,7 +352,7 @@ cluster (str) : Path to pre-saved clusters.pkl file
         print('Device name: CPU')
 
     # Load model
-    models = torch.load(model)
+    models = torch.load(model, weights_only=False)
     clusters = pickle.load(open(cluster, "rb"))
     c_index = get_cluster(clusters)
     
