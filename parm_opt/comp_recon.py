@@ -45,11 +45,12 @@ lat = args.latent
 memmap = args.memmap
 del args
 
-# train(traj=traj, top=top, out=out, fname=f_name, epochs=epochs)
+train(traj=traj, top=top, out=out, fname=f_name, epochs=epochs)
 
-cont_train(traj=traj, top=top,  model=out+f_name+'_compressed/'+f_name+'_model.pt',
-           checkpoint=out+f_name+'_compressed/'+f_name+'_checkpoints.pt', 
-           cluster=out+f_name+'_compressed/'+f_name+'_clusters.pkl', epochs=epochs)
+# cont_train(traj=traj, top=top,  model=out+f_name+'_compressed/'+f_name+'_model.pt',
+#            checkpoint=out+f_name+'_compressed/'+f_name+'_checkpoints.pt', 
+#            cluster=out+f_name+'_compressed/'+f_name+'_clusters.pkl', epochs=epochs)
+
 compress(
     traj=traj, top=top, model=out+f_name+'_compressed/'+f_name+'_model.pt',
     cluster=out+f_name+'_compressed/'+f_name+'_clusters.pkl',
