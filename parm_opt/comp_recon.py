@@ -45,7 +45,7 @@ lat = args.latent
 memmap = args.memmap
 del args
 
-train(traj=traj, top=top, out=out, fname=f_name, epochs=epochs)
+train(traj=traj, top=top, out=out, fname=f_name, epochs=epochs, lat=lat)
 
 # cont_train(traj=traj, top=top,  model=out+f_name+'_compressed/'+f_name+'_model.pt',
 #            checkpoint=out+f_name+'_compressed/'+f_name+'_checkpoints.pt', 
