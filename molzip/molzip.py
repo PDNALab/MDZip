@@ -79,10 +79,10 @@ cluster (dict) : Dictionary of clusters based on 3D coordinates [Default=None] #
     n_atoms = traj_.shape[2]
     
     if cluster!=None:
-        traj_dl = [DataLoader(traj_[cluster[c],:,:,:], batch_size=batchSize, shuffle=True, drop_last=False, num_workers=4) for c in range(len(cluster))]
+        traj_dl = [DataLoader(traj_[cluster[c],:,:,:], batch_size=batchSize, shuffle=False, drop_last=True, num_workers=4) for c in range(len(cluster))]
     else:
         cluster = {0:np.arange(traj_.shape[0]).tolist()}
-        traj_dl = [DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=False, num_workers=4)]
+        traj_dl = [DataLoader(traj_, batch_size=batchSize, shuffle=False, drop_last=False, num_workers=4)]
         
     print('_'*70+'\n')
 
@@ -264,11 +264,11 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
         device = torch.device('cpu')
         n_devices = 1
         print('CUDA is not available')
-        
+    
     # Load model
     models = torch.load(model, weights_only=False)
     clusters = pickle.load(open(cluster, "rb"))
-        
+    
     if fname != None:
         fname += '_'
     else:
@@ -280,7 +280,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     else:
         if not out.endswith('/'):
             out += '/'
-
+        
     print('_'*70+'\n')
     
 
@@ -379,7 +379,7 @@ cluster (str) : Path to pre-saved clusters.pkl file
             for i in tqdm(range(len(compressed)), desc='Decompressing '):
                 np_traj_frame = models[c_index[i]](compressed[i].reshape(1, -1)).detach().cpu().numpy()
                 np_traj_frame = np_traj_frame.reshape(-1, np_traj_frame.shape[2], 3)
-                f.write(np_traj_frame)
+                f.write(np_traj_frame*10) # make angstrom
     
     print('\n')
     print('Decompression complete\n') 
