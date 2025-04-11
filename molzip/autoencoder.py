@@ -12,18 +12,18 @@ Loss function
     def __init__(self):
         super(Loss, self).__init__()
 
-    def minMax_scale(self, tensor1, tensor2):
-        stacked_tensor = torch.stack([tensor1, tensor2])
-        min_val = torch.min(stacked_tensor).item()
-        max_val = torch.max(stacked_tensor).item()
-        tensor1 =  (tensor1 - min_val) / (max_val - min_val)
-        tensor2 =  (tensor2 - min_val) / (max_val - min_val)
-        return tensor1, tensor2
+    # def minMax_scale(self, tensor1, tensor2):
+    #     stacked_tensor = torch.stack([tensor1, tensor2])
+    #     min_val = torch.min(stacked_tensor).item()
+    #     max_val = torch.max(stacked_tensor).item()
+    #     tensor1 =  (tensor1 - min_val) / (max_val - min_val)
+    #     tensor2 =  (tensor2 - min_val) / (max_val - min_val)
+    #     return tensor1, tensor2
         
     def forward(self, recon, x):
         torch.cuda.empty_cache()  # Clear the cache before computations
-        coord1, coord2 = self.minMax_scale(recon, x)
-        rmse = torch.sqrt(torch.mean((coord1 - coord2) ** 2))
+        # coord1, coord2 = self.minMax_scale(recon, x)
+        rmse = torch.sqrt(torch.mean((recon - x) ** 2))
         return rmse 
 
 class AE(nn.Module):
