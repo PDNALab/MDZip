@@ -254,7 +254,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     if fname != None:
         fname += '_'
     else:
-        fname = os.path.basename(models[0].loss_path).split('_')[0] + '_'
+        fname = os.path.basename(model.loss_path).split('_')[0] + '_'
         
     if platform.system() == "Windows":
         if not out.endswith('\\'):
@@ -276,8 +276,7 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 
     z = []
     with torch.no_grad():
-        for encoder in model.values():
-            encoder.eval()
+        encoder.eval()
         for batch in tqdm(traj_dl, desc="Compressing "):
             batch = batch.to(device=device, dtype=torch.float32)
             z.append(encoder(batch))
@@ -340,8 +339,7 @@ out (str) : Output trajectory file path with name. Use extention to define file 
     compressed = torch.concatenate(pickle.load(open(compressed, 'rb')))
     
     with torch.no_grad():
-        for decoder in model.values():
-            decoder.eval()
+        decoder.eval()
     
         if out.endswith('.nc'):
             traj_file = md.formats.netcdf.NetCDFTrajectoryFile(out, 'w')
@@ -352,7 +350,7 @@ out (str) : Output trajectory file path with name. Use extention to define file 
     
         with traj_file as f:
             for i in tqdm(range(len(compressed)), desc='Decompressing '):
-                np_traj_frame = model(compressed[i].reshape(1, -1)).detach().cpu().numpy()
+                np_traj_frame = decoder(compressed[i].reshape(1, -1)).detach().cpu().numpy()
                 np_traj_frame = np_traj_frame.reshape(-1, np_traj_frame.shape[2], 3)
                 f.write(np_traj_frame*10) # make angstrom
     
