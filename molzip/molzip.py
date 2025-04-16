@@ -173,7 +173,11 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
 
     model = model.to(device)
     out = os.path.dirname(model.loss_path)
-    fname = os.path.basename(model.loss_path).split('_')[0] + '_'
+    if os.path.basename(model.loss_path) == 'losses.dat':
+        fname = ''
+    else:
+        fname = os.path.basename(model.loss_path).split('_')[0] + '_'
+    
 
     traj_dl = DataLoader(traj_, batch_size=batchSize, shuffle=True, drop_last=False, num_workers=4)
 
@@ -254,7 +258,10 @@ memmap (bool) : Use memory-map to read trajectory [Default=False]
     if fname != None:
         fname += '_'
     else:
-        fname = os.path.basename(model.loss_path).split('_')[0] + '_'
+        if os.path.basename(model.loss_path) == 'losses.dat':
+            fname = ''
+        else:
+            fname = os.path.basename(model.loss_path).split('_')[0] + '_'
         
     if platform.system() == "Windows":
         if not out.endswith('\\'):
