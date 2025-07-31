@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='molzip',
+    name='MDZip',
     version='0.1.0',
     author='Namindu De Silva',
     author_email='nami.rangana@gmail.com',

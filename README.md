@@ -1,4 +1,5 @@
-# MolZip
+# MDZip
+This Git repository contains MDZip, a program that leverages the power of autoencoders with residual connections to compress molecular dynamics trajectories while reconstructing global and local structural properties with minimal information loss.
 ___
 #### _Author_: [_Namindu De Silva_](https://github.com/nami-rangana)
 ![molzip](molzip.jpg)
